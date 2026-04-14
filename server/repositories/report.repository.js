@@ -7,30 +7,33 @@ class ReportRepository extends DbRepository {
     }
 
     async saveDraft(params) {
+        console.log("Saving draft with params:", params);
+        const nv = (v) => (v === undefined ? null : v);
+
         return this.executeStoredProcedure("ps.usp_Report_SaveDraftFull", [
-            { name: "ReportID", type: sql.BigInt, value: params.reportId || null, output: true },
+            { name: "ReportID", type: sql.BigInt, value: nv(params.reportId), output: true },
             { name: "ReportNo", type: sql.VarChar, output: true, length: 30 },
 
-            { name: "PlanSelectKey", type: sql.VarChar(300), value: params.planSelectKey },
-            { name: "OccurrenceTime", type: sql.DateTime2, value: params.occurrenceTime },
-            { name: "ExceptionTypeID", type: sql.Int, value: params.exceptionTypeId },
-            { name: "ExceptionCauseID", type: sql.Int, value: params.exceptionCauseId },
-            { name: "SeverityCode", type: sql.VarChar(30), value: params.severityCode },
-            { name: "ShortDescription", type: sql.NVarChar(sql.MAX), value: params.shortDescription },
-            { name: "DetailedDescription", type: sql.NVarChar(sql.MAX), value: params.detailedDescription },
-            { name: "AffectedQty", type: sql.Decimal(18, 3), value: params.affectedQty || null },
-            { name: "AffectedUom", type: sql.NVarChar(50), value: params.affectedUom || null },
-            { name: "ResponsibleDeptCode", type: sql.VarChar(50), value: params.responsibleDeptCode },
-            { name: "MainResponsibleEmpCode", type: sql.VarChar(50), value: params.mainResponsibleEmpCode },
-            { name: "ProposedSolution", type: sql.NVarChar(sql.MAX), value: params.proposedSolution },
-            { name: "InterimAction", type: sql.NVarChar(sql.MAX), value: params.interimAction || null },
-            { name: "ExpectedResult", type: sql.NVarChar(sql.MAX), value: params.expectedResult || null },
-            { name: "DueDate", type: sql.DateTime2, value: params.dueDate || null },
-            { name: "HasCost", type: sql.Bit, value: params.hasCost },
-            { name: "AffectsERP", type: sql.Bit, value: params.affectsERP },
-            { name: "ImpactCodesCsv", type: sql.NVarChar(500), value: params.impactCodesCsv || null },
-            { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: params.coordDepartmentCodesCsv || null },
-            { name: "ActionByEmpCode", type: sql.VarChar(50), value: params.actionByEmpCode }
+            { name: "PlanSelectKey", type: sql.VarChar(300), value: nv(params.planSelectKey) },
+            { name: "OccurrenceTime", type: sql.DateTime2(0), value: nv(params.occurrenceTime) },
+            { name: "ExceptionTypeID", type: sql.Int, value: nv(params.exceptionTypeId) },
+            { name: "ExceptionCauseID", type: sql.Int, value: nv(params.exceptionCauseId) },
+            { name: "SeverityCode", type: sql.VarChar(30), value: nv(params.severityCode) },
+            { name: "ShortDescription", type: sql.NVarChar(500), value: nv(params.shortDescription) },
+            { name: "DetailedDescription", type: sql.NVarChar(sql.MAX), value: nv(params.detailedDescription) },
+            { name: "AffectedQty", type: sql.Decimal(18, 3), value: nv(params.affectedQty) },
+            { name: "AffectedUom", type: sql.NVarChar(50), value: nv(params.affectedUom) },
+            { name: "ResponsibleDeptCode", type: sql.VarChar(50), value: nv(params.responsibleDeptCode) },
+            { name: "MainResponsibleEmpCode", type: sql.VarChar(50), value: nv(params.mainResponsibleEmpCode) },
+            { name: "ProposedSolution", type: sql.NVarChar(sql.MAX), value: nv(params.proposedSolution) },
+            { name: "InterimAction", type: sql.NVarChar(sql.MAX), value: nv(params.interimAction) },
+            { name: "ExpectedResult", type: sql.NVarChar(sql.MAX), value: nv(params.expectedResult) },
+            { name: "DueDate", type: sql.DateTime2(0), value: nv(params.dueDate) },
+            { name: "HasCost", type: sql.Bit, value: nv(params.hasCost) },
+            { name: "AffectsERP", type: sql.Bit, value: nv(params.affectsERP) },
+            { name: "ImpactCodesCsv", type: sql.NVarChar(500), value: nv(params.impactCodesCsv) },
+            { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: nv(params.coordDepartmentCodesCsv) },
+            { name: "ActionByEmpCode", type: sql.VarChar(50), value: nv(params.actionByEmpCode) }
         ]);
     }
 
@@ -124,15 +127,24 @@ class ReportRepository extends DbRepository {
             { name: "SourcePlanID", type: sql.VarChar(50), value: params.sourcePlanId || null },
             { name: "ResponsibleDeptCode", type: sql.VarChar(50), value: params.responsibleDeptCode || null },
             { name: "OccurredDeptCode", type: sql.VarChar(50), value: params.occurredDeptCode || null },
-            { name: "ExceptionTypeID", type: sql.Int, value: params.exceptionTypeId || null },
-            { name: "ExceptionCauseID", type: sql.Int, value: params.exceptionCauseId || null },
+
+            // SỬA: Ép kiểu rõ ràng sang Number
+            { name: "ExceptionTypeID", type: sql.Int, value: params.exceptionTypeId ? Number(params.exceptionTypeId) : null },
+            { name: "ExceptionCauseID", type: sql.Int, value: params.exceptionCauseId ? Number(params.exceptionCauseId) : null },
+
             { name: "StatusCode", type: sql.VarChar(30), value: params.statusCode || null },
-            { name: "HasCost", type: sql.Bit, value: params.hasCost || null },
+
+            // SỬA: Xử lý chuỗi "true"/"false" từ query string sang boolean
+            { name: "HasCost", type: sql.Bit, value: params.hasCost === "true" || params.hasCost === true ? true : (params.hasCost === "false" || params.hasCost === false ? false : null) },
+
             { name: "SeverityCode", type: sql.VarChar(30), value: params.severityCode || null },
             { name: "MainResponsibleEmpCode", type: sql.VarChar(50), value: params.mainResponsibleEmpCode || null },
+
+            // Những cái dưới bạn đã làm đúng (ép sang boolean)
             { name: "OnlyMine", type: sql.Bit, value: params.onlyMine === "true" || params.onlyMine === true },
             { name: "OnlyNeedMyResponse", type: sql.Bit, value: params.onlyNeedMyResponse === "true" || params.onlyNeedMyResponse === true },
             { name: "OnlyNeedMyApproval", type: sql.Bit, value: params.onlyNeedMyApproval === "true" || params.onlyNeedMyApproval === true },
+
             { name: "SortColumn", type: sql.VarChar(50), value: params.sortColumn || "CreatedAt" },
             { name: "SortDirection", type: sql.VarChar(4), value: params.sortDirection || "DESC" }
         ]);

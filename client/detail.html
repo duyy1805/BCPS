@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiết BCPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="flex h-screen overflow-hidden">
+    <div id="sidebar-container"></div>
+    <div class="flex-1 flex flex-col ml-64">
+        <div id="header-container"></div>
+        <main class="p-6 overflow-y-auto">
+            <a href="list.html" class="text-blue-600 font-bold flex items-center mb-4"><i data-lucide="arrow-left"
+                    class="w-4 h-4 mr-1"></i> Quay lại Danh sách</a>
+
+            <div
+                class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <h1 id="repNo" class="text-2xl font-extrabold">Loading...</h1>
+                        <div id="repStatus"></div>
+                    </div>
+                    <div id="repTitle" class="text-lg text-slate-600 font-medium"></div>
+                </div>
+                <div id="actionButtons" class="flex gap-2"></div>
+            </div>
+
+            <div class="flex border-b mb-6 bg-white px-2 pt-2 rounded-t-xl">
+                <button onclick="switchTab('info')" class="tab-btn active px-6 py-3 font-semibold text-sm">Thông tin
+                    chung</button>
+                <button onclick="switchTab('history')" class="tab-btn px-6 py-3 font-semibold text-sm">Lịch sử (Audit
+                    Trail)</button>
+            </div>
+
+            <div class="bg-white p-6 rounded-b-xl border border-t-0 shadow-sm min-h-[300px]">
+                <div id="tab-info" class="tab-pane">
+                    <div id="detail-overview" class="grid grid-cols-4 gap-4 mb-6"></div>
+
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <section class="border border-slate-200 rounded-xl p-4">
+                            <h3 class="font-bold text-slate-800 mb-3">Nội dung phát sinh</h3>
+                            <div id="content-section" class="space-y-3 text-sm"></div>
+                        </section>
+                        <section class="border border-slate-200 rounded-xl p-4">
+                            <h3 class="font-bold text-slate-800 mb-3">Phân công xử lý</h3>
+                            <div id="assignment-section" class="space-y-3 text-sm"></div>
+                        </section>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <section class="border border-slate-200 rounded-xl p-4">
+                            <h3 class="font-bold text-slate-800 mb-3">Ảnh hưởng & chi phí</h3>
+                            <div id="impact-cost-section" class="space-y-3 text-sm"></div>
+                        </section>
+                        <section class="border border-slate-200 rounded-xl p-4">
+                            <h3 class="font-bold text-slate-800 mb-3">Thông tin ERP</h3>
+                            <div id="erp-section" class="space-y-3 text-sm"></div>
+                        </section>
+                    </div>
+
+                    <details>
+                        <summary class="cursor-pointer text-sm font-semibold text-slate-600">Xem dữ liệu thô (debug)</summary>
+                        <pre id="raw-data" class="bg-slate-900 text-white p-4 rounded text-sm overflow-auto mt-3"></pre>
+                    </details>
+                </div>
+                <div id="tab-history" class="tab-pane hidden">
+                    <div id="history-timeline" class="ml-4 border-l-2 border-slate-200 space-y-6"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/detail.js"></script>
+</body>
+
+</html>

@@ -7,6 +7,11 @@ class WorklistService {
     }
 
     async getMyInbox(currentUser, fromDate, toDate) {
+        console.log("WorklistService.getMyInbox called with:", {
+            employeeCode: currentUser.employeeCode,
+            fromDate,
+            toDate
+        });
         const result = await this.repo.getMyInbox(
             currentUser.employeeCode,
             fromDate || null,

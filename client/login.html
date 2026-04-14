@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng nhập - BCPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-96">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">BCPS SYSTEM</h2>
+            <p class="text-slate-500 text-sm">Hệ thống Báo cáo phát sinh sản xuất</p>
+        </div>
+        <input id="username"
+            class="w-full border border-slate-300 p-2.5 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="Tên đăng nhập (admin)" value="admin" />
+        <input id="password" type="password"
+            class="w-full border border-slate-300 p-2.5 rounded-lg mb-6 focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="Mật khẩu (123456)" value="123456" />
+        <button onclick="login()"
+            class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg hover:bg-blue-700 transition">Đăng
+            nhập</button>
+        <p id="errorMsg" class="text-red-500 text-sm mt-3 text-center"></p>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        async function login() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const res = await fetchAPI('/auth/login', 'POST', { username: u, password: p });
+            if (res.success) {
+                localStorage.setItem('jwt_token', res.data.token);
+                localStorage.setItem('user_name', res.data.user.userName || res.data.user.employeeCode);
+                window.location.href = 'index.html';
+            } else {
+                document.getElementById('errorMsg').innerText = res.message || 'Lỗi đăng nhập';
+            }
+        }
+    </script>
+</body>
+
+</html>

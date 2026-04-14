@@ -1,4 +1,4 @@
-### LOGIN - lấy token
+### LOGIN - lay token (username phai la EmployeeCode tren ERP)
 POST http://localhost:5000/api/auth/login
 Content-Type: application/json
 
@@ -6,3 +6,7 @@ Content-Type: application/json
   "username": "admin",
   "password": "123456"
 }
+
+###
+GET http://localhost:5000/api/report-form/master-data
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbXBsb3llZUNvZGUiOiIxIiwidXNlck5hbWUiOiJBZG1pbmlzdHJhdG9yIiwicm9sZXMiOlsiQURNSU4iLCJNQU5BR0VSIl0sImlhdCI6MTc3NjE0MDk3NSwiZXhwIjoxNzc2MjI3Mzc1fQ.NPkahqPni9uccC7tAmum4O6HiYV78dGXcQcPpW542kk

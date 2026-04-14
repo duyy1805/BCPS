@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tao moi BCPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="flex h-screen overflow-hidden">
+    <div id="sidebar-container"></div>
+    <div class="flex-1 flex flex-col ml-64">
+        <div id="header-container"></div>
+        <main class="p-6 overflow-y-auto pb-24">
+            <h2 class="text-2xl font-bold mb-6">Phieu Bao Cao Phat Sinh Moi</h2>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 border-l-4 border-l-blue-500">
+                <h3 class="font-bold text-lg mb-4 text-slate-800">A. Ke hoach san xuat ERP <span class="text-red-500">*</span></h3>
+                <div class="flex gap-2 mb-4">
+                    <input id="erpSearch" placeholder="Nhap ma don hang hoac ma KHSX de tim..."
+                        class="border p-2.5 rounded-lg flex-1 outline-none focus:border-blue-500" />
+                    <button onclick="searchERP()"
+                        class="bg-blue-100 text-blue-700 px-6 py-2.5 rounded-lg font-bold hover:bg-blue-200">Tim kiem</button>
+                </div>
+                <select id="erpSelect" onchange="onSelectERP()"
+                    class="w-full border p-2.5 rounded-lg outline-none hidden bg-slate-50 font-medium"></select>
+
+                <div id="erpDataBox" class="mt-4 bg-slate-50 p-4 rounded-lg grid grid-cols-3 gap-4 border hidden"></div>
+            </div>
+
+            <div id="formSection"
+                class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 opacity-50 pointer-events-none transition-opacity">
+                <h3 class="font-bold text-lg mb-4 text-slate-800">B. Noi dung phat sinh</h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block font-semibold mb-2">Loai phat sinh <span class="text-red-500">*</span></label>
+                        <select id="typeId" class="w-full border p-2.5 rounded-lg outline-none focus:border-blue-500"></select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-2">Nguyen nhan <span class="text-red-500">*</span></label>
+                        <select id="causeId" class="w-full border p-2.5 rounded-lg outline-none focus:border-blue-500"></select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block font-semibold mb-2">Mo ta ngan <span class="text-red-500">*</span></label>
+                        <input id="shortDesc" class="w-full border p-2.5 rounded-lg outline-none" placeholder="Tom tat tinh huong..." />
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block font-semibold mb-2">De xuat xu ly <span class="text-red-500">*</span></label>
+                        <textarea id="solution" class="w-full border p-2.5 rounded-lg outline-none" rows="3"></textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-2">Bo phan chiu trach nhiem <span class="text-red-500">*</span></label>
+                        <select id="deptCode" class="w-full border p-2.5 rounded-lg outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-2">Nguoi chiu trach nhiem chinh <span class="text-red-500">*</span></label>
+                        <input id="empCode" class="w-full border p-2.5 rounded-lg outline-none" placeholder="Ma nhan vien (VD: 125)" />
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block font-semibold mb-2">Muc anh huong (Impact) <span class="text-red-500">*</span></label>
+                        <div id="impactCodesBox" class="border rounded-lg p-3 bg-slate-50 grid grid-cols-3 gap-2 max-h-44 overflow-y-auto"></div>
+                        <div class="text-xs text-slate-500 mt-1">Co the chon nhieu impact code.</div>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block font-semibold mb-2">Bo phan lien quan <span class="text-red-500">*</span></label>
+                        <div id="coordDepartmentsBox" class="border rounded-lg p-3 bg-slate-50 grid grid-cols-3 gap-2 max-h-44 overflow-y-auto"></div>
+                        <div class="text-xs text-slate-500 mt-1">Co the chon nhieu bo phan phoi hop.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="costSection" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 opacity-50 pointer-events-none">
+                <h3 class="font-bold text-lg mb-4 text-slate-800">C. Khai bao chi phi</h3>
+                <label class="flex items-center mb-4 cursor-pointer">
+                    <input type="checkbox" id="hasCost" onchange="toggleCost()" class="w-5 h-5 text-blue-600 rounded focus:ring-0 cursor-pointer" />
+                    <span class="ml-2 font-bold text-red-600">Co phat sinh chi phi khac phuc</span>
+                </label>
+                <div id="costAlert" class="p-3 bg-cyan-50 border border-cyan-200 text-cyan-800 rounded-lg text-sm font-medium">
+                    <i data-lucide="info" class="w-4 h-4 inline-block mb-0.5 mr-1"></i> Bao cao KHONG chi phi se duoc Truong phong Vat tu duyet.
+                </div>
+            </div>
+
+        </main>
+
+        <div class="fixed bottom-0 left-64 right-0 bg-white border-t border-slate-200 p-4 flex justify-end gap-3 z-50">
+            <button class="px-6 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg border hover:bg-slate-200">Luu nhap</button>
+            <button onclick="submitDraft()" class="px-8 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md">Luu nhap</button>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/create.js"></script>
+</body>
+
+</html>

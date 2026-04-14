@@ -7,6 +7,26 @@ class ReportService {
         this.repo = new ReportRepository();
     }
 
+    toNullableCsv(value) {
+        if (Array.isArray(value)) {
+            const cleaned = value
+                .map((x) => String(x || "").trim())
+                .filter(Boolean);
+            return cleaned.length ? cleaned.join(",") : null;
+        }
+
+        if (value === undefined || value === null) return null;
+        const text = String(value).trim();
+        return text ? text : null;
+    }
+
+    toBoolean(value, defaultValue = false) {
+        if (typeof value === "boolean") return value;
+        if (value === "true" || value === 1 || value === "1") return true;
+        if (value === "false" || value === 0 || value === "0") return false;
+        return defaultValue;
+    }
+
     async getCreateFormMasterData() {
         const result = await this.repo.getCreateFormMasterData();
 
@@ -22,9 +42,34 @@ class ReportService {
     }
 
     async saveDraft(body, currentUser) {
-        const result = await this.repo.saveDraft({
-            ...body,
+        const payload = {
+            reportId: body.reportId || null,
+            planSelectKey: body.planSelectKey || null,
+            occurrenceTime: body.occurrenceTime || null,
+            exceptionTypeId: body.exceptionTypeId ? Number(body.exceptionTypeId) : null,
+            exceptionCauseId: body.exceptionCauseId ? Number(body.exceptionCauseId) : null,
+            severityCode: body.severityCode || null,
+            shortDescription: body.shortDescription || null,
+            detailedDescription: body.detailedDescription || body.shortDescription || null,
+            affectedQty: body.affectedQty !== undefined && body.affectedQty !== null && body.affectedQty !== ""
+                ? Number(body.affectedQty)
+                : null,
+            affectedUom: body.affectedUom || null,
+            responsibleDeptCode: body.responsibleDeptCode || null,
+            mainResponsibleEmpCode: body.mainResponsibleEmpCode || null,
+            proposedSolution: body.proposedSolution || null,
+            interimAction: body.interimAction || null,
+            expectedResult: body.expectedResult || null,
+            dueDate: body.dueDate || null,
+            hasCost: this.toBoolean(body.hasCost, false),
+            affectsERP: this.toBoolean(body.affectsERP, true),
+            impactCodesCsv: this.toNullableCsv(body.impactCodesCsv),
+            coordDepartmentCodesCsv: this.toNullableCsv(body.coordDepartmentCodesCsv),
             actionByEmpCode: currentUser.employeeCode
+        };
+
+        const result = await this.repo.saveDraft({
+            ...payload
         });
 
         return ok(
