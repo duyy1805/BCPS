@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Báo cáo phát sinh</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        h2 {
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        select {
+            padding: 8px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f0f0f0;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .status-DRAFT {
+            background: gray;
+        }
+
+        .status-WAITING_FEEDBACK {
+            background: orange;
+        }
+
+        .status-APPROVED {
+            background: green;
+        }
+
+        .status-REJECTED {
+            background: red;
+        }
+
+        #detailBox {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>📊 Quản lý báo cáo phát sinh</h2>
+
+    <div class="card">
+        <h3>🔐 Token</h3>
+        <input id="token" placeholder="Paste JWT token..." style="width:400px" />
+    </div>
+
+    <div class="card">
+        <h3>🔎 Bộ lọc</h3>
+
+        <input id="keyword" placeholder="Tìm kiếm..." />
+        <input type="date" id="fromDate" />
+        <input type="date" id="toDate" />
+
+        <button onclick="loadReports()">Tải dữ liệu</button>
+    </div>
+
+    <div class="card">
+        <h3>📋 Danh sách</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Mô tả</th>
+                    <th>Bộ phận</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="card" id="detailBox">
+        <h3>📄 Chi tiết</h3>
+        <pre id="detailContent"></pre>
+    </div>
+
+    <script>
+        const API = "http://localhost:3000/api";
+
+        function getHeaders() {
+            const token = document.getElementById("token").value;
+
+            return {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            };
+        }
+
+        async function loadReports() {
+            try {
+                const keyword = document.getElementById("keyword").value;
+                const fromDate = document.getElementById("fromDate").value;
+                const toDate = document.getElementById("toDate").value;
+
+                const url = `${API}/reports?keyword=${keyword}&fromDate=${fromDate}&toDate=${toDate}`;
+
+                const res = await fetch(url, {
+                    headers: getHeaders()
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    alert(data.message);
+                    return;
+                }
+
+                renderTable(data.data.items);
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi load dữ liệu");
+            }
+        }
+
+        function renderTable(items) {
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = "";
+
+            items.forEach(x => {
+                const tr = document.createElement("tr");
+
+                tr.innerHTML = `
+                    <td>${x.ReportNo}</td>
+                    <td>${x.ShortDescription}</td>
+                    <td>${x.ResponsibleDeptCode}</td>
+                    <td>
+                        <span class="badge status-${x.StatusCode}">
+                            ${x.StatusCode}
+                        </span>
+                    </td>
+                    <td>
+                        <button onclick="viewDetail(${x.ReportID})">Xem</button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function viewDetail(id) {
+            try {
+                const res = await fetch(`${API}/reports/${id}`, {
+                    headers: getHeaders()
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    alert(data.message);
+                    return;
+                }
+
+                document.getElementById("detailBox").style.display = "block";
+                document.getElementById("detailContent").textContent =
+                    JSON.stringify(data.data, null, 2);
+
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi load chi tiết");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
