@@ -1,9 +1,11 @@
 # BCPS (Business Control/Process System) - Project Context
 
 ## Project Overview
+
 BCPS is a full-stack web application designed for reporting, tracking, and managing business exceptions, KPIs, and worklists. It facilitates a workflow-driven process including draft saving, submission, response gathering, approval routing, and closure.
 
 ### Main Technologies
+
 - **Backend:** Node.js (v18+) with Express.js.
 - **Database:** Microsoft SQL Server (MS SQL) using the `mssql` driver. Business logic is predominantly implemented via **Stored Procedures**.
 - **Authentication:** JWT (JSON Web Tokens) based authentication.
@@ -16,6 +18,7 @@ BCPS is a full-stack web application designed for reporting, tracking, and manag
 ## Architecture & Project Structure
 
 ### Server-Side (`/server`)
+
 The backend follows a layered architecture to separate concerns:
 
 - **`controllers/`**: Handle HTTP requests, extract parameters, and call service methods.
@@ -24,7 +27,7 @@ The backend follows a layered architecture to separate concerns:
   - `db.repository.js`: A base class for executing stored procedures.
   - Domain-specific repositories (e.g., `report.repository.js`) extend this logic.
 - **`routes/`**: API endpoint definitions grouped by domain (Auth, Report, Worklist, Dashboard, KPI).
-- **`middlewares/`**: 
+- **`middlewares/`**:
   - `auth.middleware.js`: Validates JWT and attaches `currentUser` to the request.
   - `error.middleware.js`: Centralized error handling and API response formatting.
   - `upload.middleware.js`: Configures `multer` for local file storage.
@@ -34,6 +37,7 @@ The backend follows a layered architecture to separate concerns:
 - **`common/`**: `api-response.js` provides standardized success/error response structures.
 
 ### Client-Side (`/client`)
+
 A lightweight, multi-page application (MPA) structure:
 
 - **`js/api.js`**: The central communication layer using the `fetch` API. Handles JWT headers and global 401/403 redirects.
@@ -44,10 +48,12 @@ A lightweight, multi-page application (MPA) structure:
 ## Building and Running
 
 ### Prerequisites
+
 - Node.js installed.
 - Access to an MS SQL Server instance with the required database schema and stored procedures.
 
 ### Commands
+
 - **Install Dependencies:**
   ```bash
   cd server
@@ -60,7 +66,7 @@ A lightweight, multi-page application (MPA) structure:
   ```
 - **Environment Setup:**
   Create a `.env` file in the `server` directory based on the following keys found in `config/env.js`:
-  - `PORT`: Server port (default: 3000)
+  - `PORT`: Server port (default: 5000)
   - `JWT_SECRET`: Secret key for JWT signing
   - `DB_USER`, `DB_PASSWORD`, `DB_SERVER`, `DB_DATABASE`, `DB_PORT`: SQL Server credentials
   - `DB_TRUST_CERT`: Set to `true` for local development.

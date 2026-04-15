@@ -64,9 +64,16 @@ class ReportService {
             hasCost: this.toBoolean(body.hasCost, false),
             affectsERP: this.toBoolean(body.affectsERP, true),
             impactCodesCsv: this.toNullableCsv(body.impactCodesCsv),
-            coordDepartmentCodesCsv: this.toNullableCsv(body.coordDepartmentCodesCsv),
             actionByEmpCode: currentUser.employeeCode
         };
+
+        // Merge mandatory primary departments (always required)
+        const MANDATORY_DEPTS = ["Quản lý đơn hàng", "Kho"];
+        const userSelected = Array.isArray(body.coordDepartmentCodesCsv)
+            ? body.coordDepartmentCodesCsv.map(String).filter(Boolean)
+            : (body.coordDepartmentCodesCsv ? String(body.coordDepartmentCodesCsv).split(",").map(s => s.trim()).filter(Boolean) : []);
+        const merged = [...new Set([...MANDATORY_DEPTS, ...userSelected])];
+        payload.coordDepartmentCodesCsv = merged.length ? merged.join(",") : null;
 
         const result = await this.repo.saveDraft({
             ...payload

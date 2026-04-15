@@ -17,6 +17,7 @@ export default function ReportList() {
         try {
             const query = `?pageNumber=1&pageSize=50&keyword=${encodeURIComponent(keyword)}&statusCode=${status}`;
             const { data } = await api.get(`/reports${query}`);
+            console.log(data)
             if (data.success) {
                 setReports(data.data.items || []);
             }

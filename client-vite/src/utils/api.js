@@ -23,7 +23,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+        // Chỉ tự động logout khi token hết hạn hoặc không hợp lệ (401)
+        // Lỗi 403 (Forbidden) có thể do không có quyền xem bản ghi cụ thể, không nên logout user
+        if (error.response && error.response.status === 401) {
             localStorage.removeItem('jwt_token');
             localStorage.removeItem('user_name');
             localStorage.removeItem('emp_code');

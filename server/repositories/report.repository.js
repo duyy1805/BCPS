@@ -23,7 +23,7 @@ class ReportRepository extends DbRepository {
             { name: "DetailedDescription", type: sql.NVarChar(sql.MAX), value: nv(params.detailedDescription) },
             { name: "AffectedQty", type: sql.Decimal(18, 3), value: nv(params.affectedQty) },
             { name: "AffectedUom", type: sql.NVarChar(50), value: nv(params.affectedUom) },
-            { name: "ResponsibleDeptCode", type: sql.VarChar(50), value: nv(params.responsibleDeptCode) },
+            { name: "ResponsibleDeptCode", type: sql.NVarChar(255), value: nv(params.responsibleDeptCode) },
             { name: "MainResponsibleEmpCode", type: sql.VarChar(50), value: nv(params.mainResponsibleEmpCode) },
             { name: "ProposedSolution", type: sql.NVarChar(sql.MAX), value: nv(params.proposedSolution) },
             { name: "InterimAction", type: sql.NVarChar(sql.MAX), value: nv(params.interimAction) },
@@ -60,7 +60,7 @@ class ReportRepository extends DbRepository {
     async saveResponse(reportId, params) {
         return this.executeStoredProcedure("ps.usp_Report_SaveResponse", [
             { name: "ReportID", type: sql.BigInt, value: reportId },
-            { name: "DepartmentCode", type: sql.VarChar(50), value: params.departmentCode },
+            { name: "DepartmentCode", type: sql.NVarChar(255), value: params.departmentCode },
             { name: "ResponderEmpCode", type: sql.VarChar(50), value: params.responderEmpCode },
             { name: "ResponseContent", type: sql.NVarChar(sql.MAX), value: params.responseContent || null },
             { name: "CauseAssessment", type: sql.NVarChar(sql.MAX), value: params.causeAssessment || null },
@@ -74,7 +74,7 @@ class ReportRepository extends DbRepository {
     async addCostLine(reportId, params) {
         return this.executeStoredProcedure("ps.usp_Report_AddCostLine", [
             { name: "ReportID", type: sql.BigInt, value: reportId },
-            { name: "DepartmentCode", type: sql.VarChar(50), value: params.departmentCode },
+            { name: "DepartmentCode", type: sql.NVarChar(255), value: params.departmentCode },
             { name: "CostTypeID", type: sql.Int, value: params.costTypeId },
             { name: "CostItemDesc", type: sql.NVarChar(500), value: params.costItemDesc },
             { name: "Qty", type: sql.Decimal(18, 3), value: params.qty || null },
@@ -116,6 +116,7 @@ class ReportRepository extends DbRepository {
     }
 
     async listPaged(params) {
+        console.log("listPaged params:", params);
         return this.executeStoredProcedure("ps.usp_Report_ListPaged", [
             { name: "EmpCode", type: sql.VarChar(50), value: params.empCode },
             { name: "PageNumber", type: sql.Int, value: Number(params.pageNumber || 1) },
@@ -125,7 +126,7 @@ class ReportRepository extends DbRepository {
             { name: "ToDate", type: sql.Date, value: params.toDate || null },
             { name: "OrderCode", type: sql.VarChar(50), value: params.orderCode || null },
             { name: "SourcePlanID", type: sql.VarChar(50), value: params.sourcePlanId || null },
-            { name: "ResponsibleDeptCode", type: sql.VarChar(50), value: params.responsibleDeptCode || null },
+            { name: "ResponsibleDeptCode", type: sql.NVarChar(255), value: params.responsibleDeptCode || null },
             { name: "OccurredDeptCode", type: sql.VarChar(50), value: params.occurredDeptCode || null },
 
             // SỬA: Ép kiểu rõ ràng sang Number

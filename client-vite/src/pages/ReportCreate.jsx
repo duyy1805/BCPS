@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Save, X, AlertCircle, Info, FileText } from 'lucide-react';
+import { Search, Save, X, AlertCircle, Info, FileText, Plus } from 'lucide-react';
 import api from '../utils/api';
 import { useUI } from '../context/UIContext';
 import { cn } from '../context/UIContext';
+import SearchSelect from '../components/ui/SearchSelect';
 
 export default function ReportCreate() {
     const navigate = useNavigate();
@@ -14,7 +15,6 @@ export default function ReportCreate() {
     const [masterData, setMasterData] = useState({
         exceptionTypes: [],
         exceptionCauses: [],
-        departments: [],
         impactTypes: []
     });
 
@@ -43,12 +43,10 @@ export default function ReportCreate() {
                     setMasterData({
                         exceptionTypes: data.data.exceptionTypes || [],
                         exceptionCauses: data.data.exceptionCauses || [],
-                        departments: data.data.departments || [],
                         impactTypes: data.data.impactTypes || []
                     });
                     if (data.data.exceptionTypes?.length > 0) setForm(prev => ({ ...prev, typeId: data.data.exceptionTypes[0].ExceptionTypeID }));
                     if (data.data.exceptionCauses?.length > 0) setForm(prev => ({ ...prev, causeId: data.data.exceptionCauses[0].ExceptionCauseID }));
-                    if (data.data.departments?.length > 0) setForm(prev => ({ ...prev, deptCode: data.data.departments[0].DepartmentCode }));
                 }
             } catch {
                 showToast('Lỗi tải dữ liệu danh mục', 'error');
@@ -81,6 +79,16 @@ export default function ReportCreate() {
             if (checked) return { ...prev, [field]: [...arr, value] };
             return { ...prev, [field]: arr.filter(x => x !== value) };
         });
+    };
+
+    const addCoordDept = (dept) => {
+        if (!dept) return;
+        if (form.coordDeptCodes.includes(dept.DepartmentCode)) return;
+        setForm(prev => ({ ...prev, coordDeptCodes: [...prev.coordDeptCodes, dept.DepartmentCode] }));
+    };
+
+    const removeCoordDept = (code) => {
+        setForm(prev => ({ ...prev, coordDeptCodes: prev.coordDeptCodes.filter(c => c !== code) }));
     };
 
     const submitDraft = async () => {
@@ -254,10 +262,24 @@ export default function ReportCreate() {
                         <div className="space-y-5">
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-2">Bộ phận chịu trách nhiệm chính</label>
-                                <select value={form.deptCode} onChange={e => setForm({ ...form, deptCode: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 mb-3">
-                                    {masterData.departments.map(d => <option key={d.DepartmentCode} value={d.DepartmentCode}>{d.DepartmentName}</option>)}
-                                </select>
-                                <input type="text" value={form.empCode} onChange={e => setForm({ ...form, empCode: e.target.value })} placeholder="Mã NV chịu trách nhiệm (vd: 125)" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl" />
+                                <SearchSelect
+                                    placeholder="Tìm bộ phận..."
+                                    apiPath="/departments"
+                                    valueField="DepartmentCode"
+                                    labelField="DepartmentName"
+                                    subLabelField="DepartmentCode"
+                                    onSelect={dept => setForm(prev => ({ ...prev, deptCode: dept?.DepartmentCode || '' }))}
+                                    className="mb-3"
+                                />
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Người chịu trách nhiệm chính</label>
+                                <SearchSelect
+                                    placeholder="Tìm nhân viên..."
+                                    apiPath={`/employees/search${form.deptCode ? `?departmentCode=${form.deptCode}` : ''}`}
+                                    valueField="EmployeeCode"
+                                    labelField="EmployeeName"
+                                    subLabelField="EmployeeCode"
+                                    onSelect={emp => setForm(prev => ({ ...prev, empCode: emp?.EmployeeCode || '' }))}
+                                />
                             </div>
 
                             <div>
@@ -267,14 +289,23 @@ export default function ReportCreate() {
 
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                 <label className="block text-sm font-bold text-slate-700 mb-3">Thông báo phản hồi tới</label>
-                                <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
-                                    {masterData.departments.map(d => (
-                                        <label key={d.DepartmentCode} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                                            <input type="checkbox" checked={form.coordDeptCodes.includes(d.DepartmentCode)} onChange={e => handleCheckbox('coordDeptCodes', d.DepartmentCode, e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-blue-600" />
-                                            <span className="font-medium">{d.DepartmentCode} - {d.DepartmentName}</span>
-                                        </label>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {form.coordDeptCodes.map(code => (
+                                        <div key={code} className="bg-blue-600 text-white text-[11px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
+                                            {code}
+                                            <X className="w-3 h-3 cursor-pointer" onClick={() => removeCoordDept(code)} />
+                                        </div>
                                     ))}
+                                    {form.coordDeptCodes.length === 0 && <span className="text-xs text-slate-400">Chưa chọn bộ phận nào.</span>}
                                 </div>
+                                <SearchSelect
+                                    placeholder="Chọn bộ phận liên quan..."
+                                    apiPath="/departments"
+                                    valueField="DepartmentCode"
+                                    labelField="DepartmentName"
+                                    subLabelField="DepartmentCode"
+                                    onSelect={addCoordDept}
+                                />
                             </div>
                         </div>
                     </div>

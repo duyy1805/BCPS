@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
     Clock, AlertTriangle, ListTree, HelpCircle, Send,
-    MessageSquare, DollarSign, CheckSquare, Archive, CheckCircle, XCircle, Plus, Trash2
+    MessageSquare, DollarSign, CheckSquare, Archive, CheckCircle, XCircle, Plus, Trash2, ChevronLeft
 } from 'lucide-react';
 import api, { formatDate, formatMoney } from '../utils/api';
 import { useUI } from '../context/UIContext';
 import StatusBadge from '../components/ui/StatusBadge';
 import { cn } from '../context/UIContext';
+import SearchSelect from '../components/ui/SearchSelect';
 
 export default function ReportDetail() {
     const { id } = useParams();
@@ -45,23 +46,38 @@ export default function ReportDetail() {
     const [costTypes, setCostTypes] = useState([]);
 
     useEffect(() => {
-        loadDetail();
+        if (id && id !== 'undefined') {
+            loadDetail();
+        } else {
+            setLoading(false);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const loadDetail = async () => {
         setLoading(true);
         try {
-            const [detailRes, actionRes] = await Promise.all([
-                api.get(`/reports/${id}`),
-                api.get(`/reports/${id}/available-actions`)
-            ]);
+            // Tách riêng 2 call để tránh call này lỗi kéo theo call kia (đặc biệt là available-actions hay bị 403 nếu k có quyền)
+            const detailRes = await api.get(`/reports/${id}`);
+
             if (detailRes.data.success) {
                 setData(detailRes.data.data);
-                setActions(actionRes.data.success ? actionRes.data.data : {});
+
+                // Load actions sau khi đã có thông tin report
+                try {
+                    const actionRes = await api.get(`/reports/${id}/available-actions`);
+                    setActions(actionRes.data.success ? actionRes.data.data : {});
+                } catch (err) {
+                    console.warn("Could not load actions:", err);
+                    setActions({});
+                }
+            } else {
+                setData(null);
             }
-        } catch {
-            showToast('Lỗi tải chi tiết hồ sơ', 'error');
+        } catch (err) {
+            console.error("Error loading report:", err);
+            // Nếu lỗi 403/401 thì interceptor đã xử lý hoặc sẽ throw ra đây
+            setData(null);
         } finally {
             setLoading(false);
         }
@@ -178,10 +194,38 @@ export default function ReportDetail() {
         }
     };
 
-    if (loading) return <div className="p-12 text-center text-slate-500 font-medium">Đang tải hồ sơ...</div>;
-    if (!data || !data.report) return <div className="p-12 text-center text-red-500 font-bold">Không tìm thấy báo cáo!</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center p-24 space-y-4">
+            <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+            <div className="text-slate-500 font-bold animate-pulse text-lg tracking-tight">Đang tải hồ sơ...</div>
+        </div>
+    );
+
+    if (!data || !data.report) return (
+        <div className="max-w-xl mx-auto mt-12 p-12 bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-2 shadow-inner">
+                <AlertTriangle className="w-10 h-10" />
+            </div>
+            <div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Không tìm thấy hồ sơ!</h2>
+                <p className="text-slate-500 font-medium leading-relaxed">
+                    Hồ sơ <b className="text-slate-900">#{id}</b> không tồn tại hoặc bạn không có quyền xem thông tin này.
+                </p>
+            </div>
+            <div className="pt-4">
+                <Link
+                    to="/reports"
+                    className="inline-flex items-center px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all active:scale-95 group"
+                >
+                    <ChevronLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+                    Quay lại danh sách
+                </Link>
+            </div>
+        </div>
+    );
 
     const r = data.report;
+    console.log(r)
     const history = data.history || [];
     const costLines = data.costLines || [];
 
@@ -203,28 +247,72 @@ export default function ReportDetail() {
                 </div>
 
                 <div className="flex gap-3 flex-wrap">
-                    {/* Action Buttons */}
+                    {/* ── Action Buttons (dựa trên quyền từ API) ── */}
+
+                    {/* Trình Phản Hồi: REPORTER khi phiếu ở DRAFT / NEED_SUPPLEMENT */}
                     {actions?.CanSubmit && (
-                        <button onClick={submitReport} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"><Send className="w-4 h-4 mr-2" /> Trình Phản Hồi</button>
+                        <button onClick={submitReport} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200">
+                            <Send className="w-4 h-4 mr-2" /> Trình Phản Hồi
+                        </button>
                     )}
-                    {r.StatusCode === 'WAITING_FEEDBACK' && (
-                        <button onClick={() => setShowRespModal(true)} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200"><MessageSquare className="w-4 h-4 mr-2" /> Ghi Phản Hồi</button>
+
+                    {/* Ghi Phản Hồi: DEPT_HANDLER khi phiếu WAITING_FEEDBACK & BP mình chưa phản hồi */}
+                    {actions?.CanRespond && (
+                        <button onClick={() => setShowRespModal(true)} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200">
+                            <MessageSquare className="w-4 h-4 mr-2" /> Ghi Phản Hồi
+                        </button>
                     )}
-                    {r.HasCost && (r.StatusCode === 'WAITING_FEEDBACK' || r.StatusCode === 'WAITING_APPROVAL') && (
-                        <button onClick={openCostModal} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200"><DollarSign className="w-4 h-4 mr-2" /> Nhập Chi Phí</button>
+
+                    {/* Nhập Chi Phí: COST_HANDLER khi phiếu CÓ CHI PHÍ & đang chờ phản hồi/bổ sung */}
+                    {actions?.CanInputCost && (
+                        <button onClick={openCostModal} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200">
+                            <DollarSign className="w-4 h-4 mr-2" /> Nhập Chi Phí
+                        </button>
                     )}
+
+                    {/* Trình Phê Duyệt: REPORTER / ADMIN khi phiếu WAITING_FEEDBACK
+                        SP không có cờ riêng → dùng CanSubmit (cùng permission REPORT_SUBMIT) kết hợp status */}
                     {r.StatusCode === 'WAITING_FEEDBACK' && actions?.CanSubmitApproval && (
-                        <button onClick={submitApprovalReq} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-cyan-600 hover:bg-cyan-700 text-white shadow-cyan-200"><CheckSquare className="w-4 h-4 mr-2" /> Trình Phê Duyệt</button>
+                        <button onClick={submitApprovalReq} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-cyan-600 hover:bg-cyan-700 text-white shadow-cyan-200">
+                            <CheckSquare className="w-4 h-4 mr-2" /> Trình Phê Duyệt
+                        </button>
                     )}
+
+                    {/* Phê Duyệt / Từ chối / Trả lại: VT_MANAGER (không phí) hoặc BGD (có phí) */}
                     {actions?.CanApprove && (
                         <>
-                            <button onClick={() => approveReport('RETURNED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700">Trả Lại</button>
-                            <button onClick={() => approveReport('REJECTED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600"><XCircle className="w-4 h-4 mr-2" /> Từ Chối</button>
-                            <button onClick={() => approveReport('APPROVED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-green-600 hover:bg-green-700 text-white shadow-green-200"><CheckCircle className="w-4 h-4 mr-2" /> Phê Duyệt</button>
+                            <button onClick={() => approveReport('RETURNED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700">
+                                Trả Lại
+                            </button>
+                            <button onClick={() => approveReport('REJECTED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600">
+                                <XCircle className="w-4 h-4 mr-2" /> Từ Chối
+                            </button>
+                            <button onClick={() => approveReport('APPROVED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-green-600 hover:bg-green-700 text-white shadow-green-200">
+                                <CheckCircle className="w-4 h-4 mr-2" /> Phê Duyệt
+                            </button>
                         </>
                     )}
+
+                    {/* Trình Ban giám đốc: VT_MANAGER khi phiếu CÓ CHI PHÍ */}
+                    {actions?.CanForwardBGD && (
+                        <>
+                            <button onClick={() => approveReport('RETURNED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700">
+                                Trả Lại
+                            </button>
+                            <button onClick={() => approveReport('REJECTED')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600">
+                                <XCircle className="w-4 h-4 mr-2" /> Từ Chối
+                            </button>
+                            <button onClick={() => approveReport('FORWARD_BGD')} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200">
+                                <Send className="w-4 h-4 mr-2" /> Trình Ban giám đốc
+                            </button>
+                        </>
+                    )}
+
+                    {/* Đóng hồ sơ: người chịu TN chính hoặc ADMIN khi phiếu APPROVED/PROCESSING */}
                     {actions?.CanClose && (
-                        <button onClick={closeReportAction} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-200"><Archive className="w-4 h-4 mr-2" /> Xác Nhận &amp; Đóng</button>
+                        <button onClick={closeReportAction} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-200">
+                            <Archive className="w-4 h-4 mr-2" /> Xác Nhận &amp; Đóng
+                        </button>
                     )}
                 </div>
             </div>
@@ -319,7 +407,7 @@ export default function ReportDetail() {
                                 <div className="animate-in fade-in space-y-4">
                                     <div className="flex items-center justify-between border-b pb-2 mb-4">
                                         <h3 className="font-bold text-slate-800 uppercase tracking-wider text-xs">Danh Sách Dòng Chi Phí</h3>
-                                        {r.HasCost && (r.StatusCode === 'WAITING_FEEDBACK' || r.StatusCode === 'WAITING_APPROVAL') && (
+                                        {actions?.CanInputCost && (
                                             <button onClick={openCostModal} className="inline-flex items-center text-xs font-bold px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg active:scale-95 transition-all">
                                                 <Plus className="w-3.5 h-3.5 mr-1" /> Thêm dòng
                                             </button>
@@ -400,8 +488,18 @@ export default function ReportDetail() {
                         <div className="space-y-5">
                             <div className="grid grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Mã Bộ Phận (*)</label>
-                                    <input type="text" value={respForm.departmentCode} onChange={e => setRespForm({ ...respForm, departmentCode: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all font-medium text-slate-800" placeholder="VD: QC, PROD, WAREHOUSE..." />
+                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Bộ Phận (*)</label>
+                                    <SearchSelect
+                                        placeholder="Chọn bộ phận..."
+                                        apiPath="/departments"
+                                        valueField="DepartmentCode"
+                                        labelField="DepartmentName"
+                                        subLabelField="DepartmentCode"
+                                        onSelect={dept => {
+                                            if (showRespModal) setRespForm({ ...respForm, departmentCode: dept?.DepartmentCode || '' });
+                                            if (showCostModal) setCostForm({ ...costForm, departmentCode: dept?.DepartmentCode || '' });
+                                        }}
+                                    />
                                 </div>
                                 <div className="flex flex-col justify-end pb-1">
                                     {r.HasCost && (
@@ -454,8 +552,15 @@ export default function ReportDetail() {
                             {/* Row 1: BP + Loại chi phí */}
                             <div className="grid grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Mã Bộ Phận (*)</label>
-                                    <input type="text" value={costForm.departmentCode} onChange={e => setCostForm({ ...costForm, departmentCode: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-medium text-slate-800" placeholder="VD: QC, PROD..." />
+                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Bộ Phận (*)</label>
+                                    <SearchSelect
+                                        placeholder="Chọn bộ phận..."
+                                        apiPath="/departments"
+                                        valueField="DepartmentCode"
+                                        labelField="DepartmentName"
+                                        subLabelField="UnitName"
+                                        onSelect={dept => setCostForm({ ...costForm, departmentCode: dept?.DepartmentCode || '' })}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Loại Chi Phí (*)</label>

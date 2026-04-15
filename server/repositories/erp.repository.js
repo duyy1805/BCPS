@@ -21,17 +21,16 @@ class ERPRepository extends DbRepository {
     }
 
     async searchEmployees(params) {
-        return this.executeStoredProcedure("erpint.usp_SearchEmployee", [
+        return this.executeStoredProcedure("ps.usp_MasterData_SearchEmployees", [
             { name: "Keyword", type: sql.NVarChar(200), value: params.keyword || null },
-            { name: "DepartmentCode", type: sql.VarChar(50), value: params.departmentCode || null },
+            { name: "DepartmentCode", type: sql.NVarChar(255), value: params.departmentCode || null },
             { name: "UnitCode", type: sql.VarChar(50), value: params.unitCode || null }
         ]);
     }
 
     async getDepartments(params) {
-        return this.executeStoredProcedure("erpint.usp_GetDepartmentList", [
-            { name: "Keyword", type: sql.NVarChar(200), value: params.keyword || null },
-            { name: "UnitCode", type: sql.VarChar(50), value: params.unitCode || null }
+        return this.executeStoredProcedure("ps.usp_MasterData_GetUnitNames", [
+            { name: "Keyword", type: sql.NVarChar(200), value: params.keyword || null }
         ]);
     }
 }
