@@ -63,7 +63,8 @@
                     </div>
 
                     <details>
-                        <summary class="cursor-pointer text-sm font-semibold text-slate-600">Xem dữ liệu thô (debug)</summary>
+                        <summary class="cursor-pointer text-sm font-semibold text-slate-600">Xem dữ liệu thô (debug)
+                        </summary>
                         <pre id="raw-data" class="bg-slate-900 text-white p-4 rounded text-sm overflow-auto mt-3"></pre>
                     </details>
                 </div>
@@ -71,7 +72,58 @@
                     <div id="history-timeline" class="ml-4 border-l-2 border-slate-200 space-y-6"></div>
                 </div>
             </div>
+            <div id="responseModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-xl w-[600px] shadow-lg">
+                    <h3 class="font-bold text-lg mb-4 text-slate-800">Nhập phản hồi bộ phận</h3>
+                    <div class="space-y-3 text-sm">
+                        <input id="respDept" placeholder="Mã BP của bạn (VD: 5 cho Kho, 8 cho Điều độ)"
+                            class="w-full border p-2 rounded outline-none focus:border-blue-500" />
+                        <textarea id="respContent" placeholder="Nội dung phản hồi..."
+                            class="w-full border p-2 rounded outline-none" rows="2"></textarea>
+                        <textarea id="respCause" placeholder="Đánh giá nguyên nhân..."
+                            class="w-full border p-2 rounded outline-none" rows="2"></textarea>
+                        <textarea id="respAction" placeholder="Hành động đề xuất..."
+                            class="w-full border p-2 rounded outline-none" rows="2"></textarea>
+                        <label class="flex items-center gap-2 cursor-pointer font-medium mt-2">
+                            <input type="checkbox" id="respHasCost" class="w-4 h-4"> Bộ phận có phát sinh chi phí
+                        </label>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button onclick="document.getElementById('responseModal').classList.add('hidden')"
+                            class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded hover:bg-slate-300">Hủy</button>
+                        <button onclick="submitResponse()"
+                            class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700">Lưu Phản
+                            Hồi</button>
+                    </div>
+                </div>
+            </div>
 
+            <div id="costModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-xl w-[600px] shadow-lg">
+                    <h3 class="font-bold text-lg mb-4 text-slate-800">Thêm dòng chi phí</h3>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <input id="costDept" placeholder="Mã Bộ Phận (VD: 12)"
+                            class="border p-2 rounded col-span-2 outline-none focus:border-blue-500" />
+                        <select id="costType" class="border p-2 rounded outline-none">
+                            <option value="1">Chi phí nhân công (Tăng ca)</option>
+                            <option value="2">Chi phí vật tư bổ sung</option>
+                        </select>
+                        <input id="costQty" type="number" placeholder="Số lượng (VD: 20)"
+                            class="border p-2 rounded outline-none" />
+                        <input id="costUnit" type="number" placeholder="Đơn giá VNĐ (VD: 85000)"
+                            class="border p-2 rounded outline-none col-span-2" />
+                        <textarea id="costDesc" placeholder="Mô tả khoản chi phí..."
+                            class="border p-2 rounded col-span-2 outline-none" rows="2"></textarea>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button onclick="document.getElementById('costModal').classList.add('hidden')"
+                            class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded hover:bg-slate-300">Hủy</button>
+                        <button onclick="submitCost()"
+                            class="px-4 py-2 bg-red-600 text-white font-bold rounded hover:bg-red-700">Lưu Chi
+                            Phí</button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
     <script src="js/api.js"></script>

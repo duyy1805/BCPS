@@ -89,11 +89,11 @@ async function searchERP() {
         erpPlans = res.data.items;
         const select = document.getElementById("erpSelect");
         select.innerHTML =
-            `<option value="">-- Chon mot dong ke hoach --</option>` +
+            `<option value="">-- Chọn một dòng kế hoạch --</option>` +
             erpPlans.map((p) => `<option value="${p.PlanSelectKey}">${p.DisplayText}</option>`).join("");
         select.classList.remove("hidden");
     } else {
-        alert("Khong tim thay ke hoach ERP nao phu hop!");
+        UI.showToast("Không tìm thấy kế hoạch ERP nào phù hợp!", "warning");
     }
 }
 
@@ -107,9 +107,11 @@ function onSelectERP() {
     const box = document.getElementById("erpDataBox");
     box.classList.remove("hidden");
     box.innerHTML = `
-        <div><div class="text-xs text-slate-500">Ma Don Hang</div><div class="font-bold">${escapeHtml(p.OrderCode)}</div></div>
-        <div><div class="text-xs text-slate-500">San pham</div><div class="font-bold">${escapeHtml(p.ProductName)}</div></div>
-        <div><div class="text-xs text-slate-500">Bo phan ERP</div><div class="font-bold">${escapeHtml(p.DepartmentName)}</div></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+            <div><div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-bold">Mã Đơn Hàng</div><div class="font-bold text-slate-900">${escapeHtml(p.OrderCode)}</div></div>
+            <div><div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-bold">Sản phẩm</div><div class="font-bold text-slate-900">${escapeHtml(p.ProductName)}</div></div>
+            <div><div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-bold">Bộ phận ERP</div><div class="font-bold text-slate-900">${escapeHtml(p.DepartmentName)}</div></div>
+        </div>
     `;
 
     document.getElementById("formSection").classList.remove("opacity-50", "pointer-events-none");
@@ -122,10 +124,10 @@ function toggleCost() {
 
     if (isCost) {
         alertBox.className = "p-3 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg text-sm font-medium mt-4";
-        alertBox.innerHTML = "<i data-lucide='alert-circle' class='w-4 h-4 inline-block mb-0.5 mr-1'></i> Bao cao CO CHI PHI tai chinh se do BAN GIAM DOC phe duyet.";
+        alertBox.innerHTML = "<i data-lucide='alert-circle' class='w-4 h-4 inline-block mb-0.5 mr-1'></i> Báo cáo CÓ CHI PHÍ tài chính sẽ do BAN GIÁM ĐỐC phê duyệt.";
     } else {
         alertBox.className = "p-3 bg-cyan-50 border border-cyan-200 text-cyan-800 rounded-lg text-sm font-medium mt-4";
-        alertBox.innerHTML = "<i data-lucide='info' class='w-4 h-4 inline-block mb-0.5 mr-1'></i> Bao cao KHONG chi phi se duoc Truong phong Vat tu duyet.";
+        alertBox.innerHTML = "<i data-lucide='info' class='w-4 h-4 inline-block mb-0.5 mr-1'></i> Báo cáo KHÔNG chi phí sẽ được Trưởng phòng Vật tư duyệt.";
     }
 
     lucide.createIcons();
@@ -142,13 +144,13 @@ async function submitDraft() {
     const impactCodesCsv = getCheckedCsv(".impact-code-checkbox");
     const coordDepartmentCodesCsv = getCheckedCsv(".coord-dept-checkbox");
 
-    if (!planSelectKey) return alert("Vui long chon ke hoach ERP.");
-    if (!shortDesc) return alert("Vui long nhap mo ta ngan.");
-    if (!solution) return alert("Vui long nhap de xuat xu ly.");
-    if (!responsibleDeptCode) return alert("Vui long chon bo phan chiu trach nhiem.");
-    if (!mainResponsibleEmpCode) return alert("Vui long nhap ma nguoi chiu trach nhiem chinh.");
-    if (!impactCodesCsv) return alert("Vui long chon it nhat 1 ImpactCode.");
-    if (!coordDepartmentCodesCsv) return alert("Vui long chon it nhat 1 bo phan lien quan.");
+    if (!planSelectKey) return UI.showToast("Vui lòng chọn kế hoạch ERP.", "warning");
+    if (!shortDesc) return UI.showToast("Vui lòng nhập mô tả ngắn.", "warning");
+    if (!solution) return UI.showToast("Vui lòng nhập đề xuất xử lý.", "warning");
+    if (!responsibleDeptCode) return UI.showToast("Vui lòng chọn bộ phận chịu trách nhiệm.", "warning");
+    if (!mainResponsibleEmpCode) return UI.showToast("Vui lòng nhập mã người chịu trách nhiệm chính.", "warning");
+    if (!impactCodesCsv) return UI.showToast("Vui lòng chọn ít nhất 1 ImpactCode.", "warning");
+    if (!coordDepartmentCodesCsv) return UI.showToast("Vui lòng chọn ít nhất 1 bộ phận liên quan.", "warning");
 
     const body = {
         reportId: null,
@@ -175,12 +177,23 @@ async function submitDraft() {
 
     const res = await fetchAPI("/reports/draft", "POST", body);
     if (!res.success) {
-        alert(res.message || "Khong the luu nhap.");
+        UI.showToast(res.message || "Không thể lưu nháp.", "error");
         return;
     }
 
     const reportId = res.data.reportId;
-    alert(`Da luu nhap thanh cong! Ma: ${res.data.reportNo}`);
+    const fileInput = document.getElementById("attachmentFile");
+    if (fileInput.files.length > 0) {
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("attachmentScope", "REPORT");
 
-    window.location.href = `detail.html?id=${reportId}`;
+        await fetchAPI(`/reports/${reportId}/attachments`, "POST", formData);
+    }
+
+    UI.showToast(`Đã lưu nháp và tải tệp lên thành công!`, "success");
+
+    setTimeout(() => {
+        window.location.href = `detail.html?id=${reportId}`;
+    }, 1000);
 }

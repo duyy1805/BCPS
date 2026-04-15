@@ -5,3 +5,7 @@ server/.env
 # Build output
 dist/
 build/
+
+full.docx
+erpint.sql
+ps.sql

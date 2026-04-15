@@ -1,0 +1,310 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Save, X, AlertCircle, Info, FileText } from 'lucide-react';
+import api from '../utils/api';
+import { useUI } from '../context/UIContext';
+import { cn } from '../context/UIContext';
+
+export default function ReportCreate() {
+    const navigate = useNavigate();
+    const { showToast } = useUI();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    const [masterData, setMasterData] = useState({
+        exceptionTypes: [],
+        exceptionCauses: [],
+        departments: [],
+        impactTypes: []
+    });
+
+    const [erpSearch, setErpSearch] = useState('');
+    const [erpPlans, setErpPlans] = useState([]);
+    const [selectedPlan, setSelectedPlan] = useState(null);
+    const [file, setFile] = useState(null);
+
+    const [form, setForm] = useState({
+        shortDesc: '',
+        solution: '',
+        deptCode: '',
+        empCode: '',
+        typeId: '',
+        causeId: '',
+        hasCost: false,
+        impactCodes: [],
+        coordDeptCodes: []
+    });
+
+    useEffect(() => {
+        const loadMasterData = async () => {
+            try {
+                const { data } = await api.get('/report-form/master-data');
+                if (data.success) {
+                    setMasterData({
+                        exceptionTypes: data.data.exceptionTypes || [],
+                        exceptionCauses: data.data.exceptionCauses || [],
+                        departments: data.data.departments || [],
+                        impactTypes: data.data.impactTypes || []
+                    });
+                    if (data.data.exceptionTypes?.length > 0) setForm(prev => ({ ...prev, typeId: data.data.exceptionTypes[0].ExceptionTypeID }));
+                    if (data.data.exceptionCauses?.length > 0) setForm(prev => ({ ...prev, causeId: data.data.exceptionCauses[0].ExceptionCauseID }));
+                    if (data.data.departments?.length > 0) setForm(prev => ({ ...prev, deptCode: data.data.departments[0].DepartmentCode }));
+                }
+            } catch {
+                showToast('Lỗi tải dữ liệu danh mục', 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadMasterData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const searchERP = async () => {
+        if (!erpSearch.trim()) return showToast('Vui lòng nhập từ khóa ERP', 'warning');
+        try {
+            const { data } = await api.get(`/erp/production-plans/search?keyword=${encodeURIComponent(erpSearch)}&topN=50`);
+            if (data.success && data.data.items.length > 0) {
+                setErpPlans(data.data.items);
+            } else {
+                showToast('Không tìm thấy kế hoạch ERP nào phù hợp!', 'warning');
+                setErpPlans([]);
+            }
+        } catch {
+            showToast('Lỗi tìm kiếm ERP', 'error');
+        }
+    };
+
+    const handleCheckbox = (field, value, checked) => {
+        setForm(prev => {
+            const arr = prev[field];
+            if (checked) return { ...prev, [field]: [...arr, value] };
+            return { ...prev, [field]: arr.filter(x => x !== value) };
+        });
+    };
+
+    const submitDraft = async () => {
+        if (!selectedPlan) return showToast('Vui lòng chọn kế hoạch ERP', 'warning');
+        if (!form.shortDesc) return showToast('Vui lòng nhập mô tả ngắn', 'warning');
+        if (!form.solution) return showToast('Vui lòng nhập đề xuất xử lý', 'warning');
+        if (!form.deptCode) return showToast('Vui lòng chọn bộ phận chịu trách nhiệm', 'warning');
+        if (!form.empCode) return showToast('Vui lòng nhập mã người chịu trách nhiệm chính', 'warning');
+        if (form.impactCodes.length === 0) return showToast('Vui lòng chọn ít nhất 1 mức độ ảnh hưởng', 'warning');
+        if (form.coordDeptCodes.length === 0) return showToast('Vui lòng chọn ít nhất 1 bộ phận liên quan', 'warning');
+
+        setSaving(true);
+        try {
+            const body = {
+                reportId: null,
+                planSelectKey: selectedPlan.PlanSelectKey,
+                occurrenceTime: new Date().toISOString(),
+                exceptionTypeId: Number(form.typeId),
+                exceptionCauseId: Number(form.causeId),
+                severityCode: "HIGH",
+                shortDescription: form.shortDesc,
+                detailedDescription: form.shortDesc,
+                affectedQty: null,
+                affectedUom: null,
+                responsibleDeptCode: form.deptCode,
+                mainResponsibleEmpCode: form.empCode,
+                proposedSolution: form.solution,
+                interimAction: null,
+                expectedResult: null,
+                dueDate: null,
+                hasCost: form.hasCost,
+                affectsERP: true,
+                impactCodesCsv: form.impactCodes.join(','),
+                coordDepartmentCodesCsv: form.coordDeptCodes.join(',')
+            };
+
+            const res = await api.post('/reports/draft', body);
+            if (res.data.success) {
+                const reportId = res.data.data.reportId;
+
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('attachmentScope', 'REPORT');
+                    await api.post(`/reports/${reportId}/attachments`, formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                }
+
+                showToast('Đã lưu nháp hồ sơ thành công!', 'success');
+                navigate(`/reports/${reportId}`);
+            } else {
+                showToast(res.data.message || 'Lỗi lưu nháp', 'error');
+            }
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Lỗi lưu nháp', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) return <div className="p-8 text-center text-slate-500">Đang tải...</div>;
+
+    return (
+        <div className="max-w-8xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header Actions */}
+            <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <h1 className="text-xl font-bold text-slate-800 flex items-center">
+                    <FileText className="w-6 h-6 mr-3 text-blue-600" />
+                    Tạo mới Báo cáo Phát sinh
+                </h1>
+                <div className="flex gap-4">
+                    <button onClick={() => navigate('/reports')} className="px-5 py-2.5 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                        Hủy bỏ
+                    </button>
+                    <button onClick={submitDraft} disabled={saving} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm shadow-blue-200 flex items-center transition-all active:scale-95 disabled:opacity-50">
+                        <Save className="w-5 h-5 mr-2" /> {saving ? 'Đang lưu...' : 'Lưu Nháp Hồ Sơ'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6">
+                {/* Left Col - ERP Search & Form */}
+                <div className="col-span-2 space-y-6">
+                    {/* ERP Search */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">1. Chọn kế hoạch ERP gốc</h3>
+                        <div className="flex gap-3 mb-4">
+                            <input
+                                type="text"
+                                value={erpSearch}
+                                onChange={e => setErpSearch(e.target.value)}
+                                className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                placeholder="Nhập Lệnh SX, Mã kế hoạch..."
+                            />
+                            <button onClick={searchERP} className="px-5 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors">Tìm</button>
+                        </div>
+
+                        {erpPlans.length > 0 && (
+                            <select
+                                onChange={e => setSelectedPlan(erpPlans.find(p => p.PlanSelectKey === e.target.value))}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-xl mb-4 bg-slate-50 outline-none focus:border-blue-500"
+                            >
+                                <option value="">-- Chọn dòng kế hoạch phù hợp --</option>
+                                {erpPlans.map(p => (
+                                    <option key={p.PlanSelectKey} value={p.PlanSelectKey}>{p.DisplayText}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        {selectedPlan && (
+                            <div className="grid grid-cols-3 gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 animate-in fade-in">
+                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Mã Đơn Hàng</div><div className="font-bold text-slate-900">{selectedPlan.OrderCode}</div></div>
+                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Sản phẩm</div><div className="font-bold text-slate-900">{selectedPlan.ProductName}</div></div>
+                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Bộ phận</div><div className="font-bold text-slate-900">{selectedPlan.DepartmentName}</div></div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Main Form Box */}
+                    <div className={cn("bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-opacity", !selectedPlan && "opacity-50 pointer-events-none")}>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">2. Thông tin sự việc</h3>
+
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Mô tả ngắn gọn sự cố (*)</label>
+                                <textarea value={form.shortDesc} onChange={e => setForm({ ...form, shortDesc: e.target.value })} rows="2" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500"></textarea>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Loại phát sinh</label>
+                                    <select value={form.typeId} onChange={e => setForm({ ...form, typeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50">
+                                        {masterData.exceptionTypes.map(t => <option key={t.ExceptionTypeID} value={t.ExceptionTypeID}>{t.ExceptionTypeName}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Nguyên nhân sơ bộ</label>
+                                    <select value={form.causeId} onChange={e => setForm({ ...form, causeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50">
+                                        {masterData.exceptionCauses.map(c => <option key={c.ExceptionCauseID} value={c.ExceptionCauseID}>{c.ExceptionCauseName}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <label className="block text-sm font-bold text-slate-700 mb-3">Mức độ ảnh hưởng (chọn nhiều)</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {masterData.impactTypes.map(imp => {
+                                        const val = imp.ImpactCode || imp.Code || imp.Value || imp.ID;
+                                        const label = imp.ImpactName || imp.ImpactTypeName || imp.Name || val;
+                                        return (
+                                            <label key={val} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                                                <input type="checkbox" checked={form.impactCodes.includes(val)} onChange={e => handleCheckbox('impactCodes', val, e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                <span className="font-medium">{label}</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Col */}
+                <div className={cn("space-y-6 transition-opacity", !selectedPlan && "opacity-50 pointer-events-none")}>
+
+                    {/* Action form */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">3. Xử lý & Trách nhiệm</h3>
+
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Bộ phận chịu trách nhiệm chính</label>
+                                <select value={form.deptCode} onChange={e => setForm({ ...form, deptCode: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 mb-3">
+                                    {masterData.departments.map(d => <option key={d.DepartmentCode} value={d.DepartmentCode}>{d.DepartmentName}</option>)}
+                                </select>
+                                <input type="text" value={form.empCode} onChange={e => setForm({ ...form, empCode: e.target.value })} placeholder="Mã NV chịu trách nhiệm (vd: 125)" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl" />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Đề xuất xử lý (*)</label>
+                                <textarea value={form.solution} onChange={e => setForm({ ...form, solution: e.target.value })} rows="3" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none"></textarea>
+                            </div>
+
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <label className="block text-sm font-bold text-slate-700 mb-3">Thông báo phản hồi tới</label>
+                                <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                                    {masterData.departments.map(d => (
+                                        <label key={d.DepartmentCode} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                                            <input type="checkbox" checked={form.coordDeptCodes.includes(d.DepartmentCode)} onChange={e => handleCheckbox('coordDeptCodes', d.DepartmentCode, e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-blue-600" />
+                                            <span className="font-medium">{d.DepartmentCode} - {d.DepartmentName}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Cost Toggle */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <label className="flex items-start gap-4 cursor-pointer group p-2">
+                            <div className="relative flex items-center mt-1">
+                                <input type="checkbox" checked={form.hasCost} onChange={e => setForm({ ...form, hasCost: e.target.checked })} className="sr-only" />
+                                <div className={cn("block w-10 h-6 rounded-full transition-colors", form.hasCost ? "bg-blue-500" : "bg-slate-300")}></div>
+                                <div className={cn("absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform", form.hasCost ? "translate-x-4" : "")}></div>
+                            </div>
+                            <div className="flex-1">
+                                <div className="font-bold text-slate-800">Có phát sinh chi phí</div>
+                                <div className="text-xs text-slate-500 mt-1">Đánh dấu nếu sự việc làm tăng chi phí.</div>
+                            </div>
+                        </label>
+                        <div className={cn("mt-4 p-3 rounded-lg text-sm font-bold flex items-start gap-2", form.hasCost ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-cyan-50 text-cyan-700 border border-cyan-200')}>
+                            {form.hasCost ? <AlertCircle className="w-5 h-5 shrink-0" /> : <Info className="w-4 h-4 shrink-0 mt-0.5" />}
+                            {form.hasCost ? 'Báo cáo CÓ CHI PHÍ sẽ do BAN GIÁM ĐỐC phê duyệt.' : 'Báo cáo KHÔNG chi phí sẽ được Trưởng phòng Vật tư duyệt.'}
+                        </div>
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 mb-2">Đính kèm minh chứng</h3>
+                        <input type="file" onChange={e => setFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
