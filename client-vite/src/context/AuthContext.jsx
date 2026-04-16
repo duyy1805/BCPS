@@ -27,6 +27,7 @@ const STORAGE_KEYS = {
     userName: 'user_name',
     empCode: 'emp_code',
     deptCode: 'department_code',
+    roles: 'user_roles',
 };
 
 function clearStorage() {
@@ -50,11 +51,18 @@ export const AuthProvider = ({ children }) => {
         const userName = localStorage.getItem(STORAGE_KEYS.userName);
         const empCode = localStorage.getItem(STORAGE_KEYS.empCode);
         const deptCode = localStorage.getItem(STORAGE_KEYS.deptCode);
+        const rolesStr = localStorage.getItem(STORAGE_KEYS.roles);
 
         if (token && userName) {
             if (isTokenValid(token)) {
+                let roles = [];
+                try {
+                    roles = rolesStr ? JSON.parse(rolesStr) : [];
+                } catch (e) {
+                    console.error("Failed to parse roles", e);
+                }
                 // eslint-disable-next-line react-hooks/set-state-in-effect
-                setUser({ token, userName, empCode, deptCode });
+                setUser({ token, userName, empCode, deptCode, roles });
             } else {
                 // Token đã hết hạn → xóa và chuyển về login
                 clearStorage();
@@ -86,11 +94,15 @@ export const AuthProvider = ({ children }) => {
         if (data.deptCode) {
             localStorage.setItem(STORAGE_KEYS.deptCode, data.deptCode);
         }
+        if (data.roles) {
+            localStorage.setItem(STORAGE_KEYS.roles, JSON.stringify(data.roles));
+        }
         setUser({
             token: data.token,
             userName: data.userName,
             empCode: data.empCode,
             deptCode: data.deptCode,
+            roles: data.roles || [],
         });
         navigate('/');
     };

@@ -15,7 +15,8 @@ export default function ReportCreate() {
     const [masterData, setMasterData] = useState({
         exceptionTypes: [],
         exceptionCauses: [],
-        impactTypes: []
+        impactTypes: [],
+        severities: []
     });
 
     const [erpSearch, setErpSearch] = useState('');
@@ -30,6 +31,7 @@ export default function ReportCreate() {
         empCode: '',
         typeId: '',
         causeId: '',
+        severityCode: '',
         hasCost: false,
         impactCodes: [],
         coordDeptCodes: []
@@ -43,10 +45,12 @@ export default function ReportCreate() {
                     setMasterData({
                         exceptionTypes: data.data.exceptionTypes || [],
                         exceptionCauses: data.data.exceptionCauses || [],
-                        impactTypes: data.data.impactTypes || []
+                        impactTypes: data.data.impactTypes || [],
+                        severities: data.data.severities || []
                     });
                     if (data.data.exceptionTypes?.length > 0) setForm(prev => ({ ...prev, typeId: data.data.exceptionTypes[0].ExceptionTypeID }));
                     if (data.data.exceptionCauses?.length > 0) setForm(prev => ({ ...prev, causeId: data.data.exceptionCauses[0].ExceptionCauseID }));
+                    if (data.data.severities?.length > 0) setForm(prev => ({ ...prev, severityCode: data.data.severities[0].SeverityCode }));
                 }
             } catch {
                 showToast('Lỗi tải dữ liệu danh mục', 'error');
@@ -108,7 +112,7 @@ export default function ReportCreate() {
                 occurrenceTime: new Date().toISOString(),
                 exceptionTypeId: Number(form.typeId),
                 exceptionCauseId: Number(form.causeId),
-                severityCode: "HIGH",
+                severityCode: form.severityCode,
                 shortDescription: form.shortDesc,
                 detailedDescription: form.shortDesc,
                 affectedQty: null,
@@ -218,7 +222,7 @@ export default function ReportCreate() {
                                 <textarea value={form.shortDesc} onChange={e => setForm({ ...form, shortDesc: e.target.value })} rows="2" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500"></textarea>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-5">
+                            <div className="grid grid-cols-3 gap-5">
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-2">Loại phát sinh</label>
                                     <select value={form.typeId} onChange={e => setForm({ ...form, typeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50">
@@ -226,9 +230,15 @@ export default function ReportCreate() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Nguyên nhân sơ bộ</label>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Nguyên nhân</label>
                                     <select value={form.causeId} onChange={e => setForm({ ...form, causeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50">
                                         {masterData.exceptionCauses.map(c => <option key={c.ExceptionCauseID} value={c.ExceptionCauseID}>{c.ExceptionCauseName}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Mức độ độ ảnh hưởng (*)</label>
+                                    <select value={form.severityCode} onChange={e => setForm({ ...form, severityCode: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 font-bold text-blue-600">
+                                        {masterData.severities.map(s => <option key={s.SeverityCode} value={s.SeverityCode}>{s.SeverityName}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -268,7 +278,8 @@ export default function ReportCreate() {
                                     valueField="DepartmentCode"
                                     labelField="DepartmentName"
                                     subLabelField="DepartmentCode"
-                                    onSelect={dept => setForm(prev => ({ ...prev, deptCode: dept?.DepartmentCode || '' }))}
+                                    initialValue={form.deptCode}
+                                    onSelect={dept => setForm(prev => ({ ...prev, deptCode: dept?.DepartmentCode || '', empCode: '' }))}
                                     className="mb-3"
                                 />
                                 <label className="block text-sm font-bold text-slate-700 mb-2">Người chịu trách nhiệm chính</label>
@@ -277,7 +288,8 @@ export default function ReportCreate() {
                                     apiPath={`/employees/search${form.deptCode ? `?departmentCode=${form.deptCode}` : ''}`}
                                     valueField="EmployeeCode"
                                     labelField="EmployeeName"
-                                    subLabelField="EmployeeCode"
+                                    subLabelField="DepartmentCode"
+                                    initialValue={form.empCode}
                                     onSelect={emp => setForm(prev => ({ ...prev, empCode: emp?.EmployeeCode || '' }))}
                                 />
                             </div>

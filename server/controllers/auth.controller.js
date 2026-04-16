@@ -1,105 +1,42 @@
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const env = require("../config/env");
 const { ok, fail } = require("../common/api-response");
+const authRepository = require("../repositories/auth.repository");
 
 /**
- * Danh sách tài khoản test theo từng Role trong hệ thống BCPS.
- * Tương ứng với bảng ps.RoleMaster và ps.UserRole trong database.
- *
- * RoleMaster:
- *   ADMIN        - Quản trị hệ thống        (empCode: 1)
- *   REPORTER     - Người lập báo cáo        (empCode: 10)
- *   DEPT_HANDLER - Bộ phận phản hồi/xử lý  (empCode: 20)
- *   COST_HANDLER - Nhập và xác nhận chi phí (empCode: 30)
- *   VT_MANAGER   - Trưởng phòng Vật tư      (empCode: 101)
- *   BGD          - Ban giám đốc             (empCode: 1)   ← dùng empCode 1 (từ ApprovalRouteConfig)
- *   LEADER       - Lãnh đạo xem dashboard   (empCode: 50)
+ * Đăng nhập bằng Database (xác thực MD5)
  */
-const ACCOUNTS = [
-    {
-        username: "admin",
-        password: "123456",
-        employeeCode: "1",
-        userName: "Quản Trị Hệ Thống",
-        roles: ["ADMIN"],
-        unitName: "Ban CNTT"
-    },
-    {
-        username: "reporter",
-        password: "123456",
-        employeeCode: "104",
-        userName: "Nguyễn Văn Lập (REPORTER)",
-        roles: ["REPORTER"],
-        unitName: "Xưởng 1"
-    },
-    {
-        username: "dept_order",
-        password: "123456",
-        employeeCode: "984",
-        userName: "Trần Thị Đơn Hàng (ORDER)",
-        roles: ["DEPT_HANDLER"],
-        departmentCode: "1100",
-        unitName: "Quản lý đơn hàng"
-    },
-    {
-        username: "dept_warehouse",
-        password: "123456",
-        employeeCode: "444",
-        userName: "Lê Văn Kho (WAREHOUSE)",
-        roles: ["DEPT_HANDLER"],
-        departmentCode: "1200",
-        unitName: "Kho"
-    },
-    {
-        username: "vt_manager",
-        password: "123456",
-        employeeCode: "1008",
-        userName: "Trưởng Phòng Vật Tư (VT_MANAGER)",
-        roles: ["VT_MANAGER"],
-        unitName: "Phòng Vật tư"
-    },
-    {
-        username: "bgd",
-        password: "123456",
-        employeeCode: "589",
-        userName: "Ban Giám Đốc (BGD)",
-        roles: ["BGD"],
-        unitName: "Ban giám đốc"
-    },
-    {
-        username: "leader",
-        password: "123456",
-        employeeCode: "50",
-        userName: "Lãnh Đạo Xem Dashboard (LEADER)",
-        roles: ["LEADER"],
-        unitName: "Hội đồng quản trị"
-    }
-];
-
 async function login(req, res, next) {
     try {
         const { username, password } = req.body;
-        console.log("[Auth] Login attempt:", username);
+        console.log("[Auth] Login attempt from DB:", username);
 
-        const account = ACCOUNTS.find(
-            (a) => a.username === username && a.password === password
-        );
+        if (!username || !password) {
+            return res.status(400).json(fail("Vui lòng nhập tên đăng nhập và mật khẩu."));
+        }
+
+        // Tạo mã hóa MD5 viết thường từ mật khẩu người dùng nhập
+        const passwordMd5 = crypto.createHash("md5").update(password).digest("hex");
+
+        // Truy vấn database
+        const account = await authRepository.login(username, passwordMd5);
 
         if (!account) {
             return res.status(401).json(fail("Tài khoản hoặc mật khẩu không đúng."));
         }
 
         const payload = {
-            employeeCode: account.employeeCode,
-            userName: account.userName,
+            employeeCode: account.EmployeeCode,
+            userName: account.UserName,
             roles: account.roles,
-            unitName: account.unitName || null,
-            departmentCode: account.departmentCode || null
+            unitName: account.UnitName || null,
+            departmentCode: account.EmployeeCode // Có thể map lại nếu cần thực tế hơn
         };
 
         const token = jwt.sign(payload, env.jwtSecret, { expiresIn: "16h" });
 
-        console.log("[Auth] Login success:", account.username, "→", account.roles.join(","));
+        console.log("[Auth] Login success:", username, "→", account.roles.join(","));
 
         return res.json(ok({ token, user: payload }, "Đăng nhập thành công."));
     } catch (err) {

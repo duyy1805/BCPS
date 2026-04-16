@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
     Clock, AlertTriangle, ListTree, HelpCircle, Send,
-    MessageSquare, DollarSign, CheckSquare, Archive, CheckCircle, XCircle, Plus, Trash2, ChevronLeft
+    MessageSquare, DollarSign, CheckSquare, Archive, CheckCircle, XCircle, Plus, Trash2, ChevronLeft, Save
 } from 'lucide-react';
 import api, { formatDate, formatMoney } from '../utils/api';
 import { useUI } from '../context/UIContext';
+import { useAuth } from '../context/AuthContext';
 import StatusBadge from '../components/ui/StatusBadge';
 import { cn } from '../context/UIContext';
 import SearchSelect from '../components/ui/SearchSelect';
@@ -13,6 +14,7 @@ import SearchSelect from '../components/ui/SearchSelect';
 export default function ReportDetail() {
     const { id } = useParams();
     const { showToast, confirm, prompt } = useUI();
+    const { user } = useAuth();
 
     const [data, setData] = useState(null);
     const [actions, setActions] = useState(null);
@@ -45,6 +47,25 @@ export default function ReportDetail() {
     // Danh sách CostType (load từ master data khi mở modal)
     const [costTypes, setCostTypes] = useState([]);
 
+    // ── Edit Mode ───────────────────────────────────────────────
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({});
+    const [masterData, setMasterData] = useState(null);
+    const [saving, setSaving] = useState(false);
+
+    const loadMasterData = async () => {
+        if (masterData) return;
+        try {
+            const res = await api.get('/report-form/master-data');
+            if (res.data.success) {
+                setMasterData(res.data.data);
+                setCostTypes(res.data.data.costTypes || []);
+            }
+        } catch (err) {
+            showToast('Không tải được danh mục', 'error');
+        }
+    };
+
     useEffect(() => {
         if (id && id !== 'undefined') {
             loadDetail();
@@ -57,26 +78,51 @@ export default function ReportDetail() {
     const loadDetail = async () => {
         setLoading(true);
         try {
-            // Tách riêng 2 call để tránh call này lỗi kéo theo call kia (đặc biệt là available-actions hay bị 403 nếu k có quyền)
+            // Tách riêng 2 call để tránh call này lỗi kéo theo call kia
             const detailRes = await api.get(`/reports/${id}`);
 
             if (detailRes.data.success) {
-                setData(detailRes.data.data);
+                const reportData = detailRes.data.data;
+                let actionData = {};
 
                 // Load actions sau khi đã có thông tin report
                 try {
                     const actionRes = await api.get(`/reports/${id}/available-actions`);
-                    setActions(actionRes.data.success ? actionRes.data.data : {});
+                    actionData = actionRes.data.success ? actionRes.data.data : {};
                 } catch (err) {
                     console.warn("Could not load actions:", err);
-                    setActions({});
                 }
+
+                // Restriction logic cho VT_MANAGER và BGD
+                // Cho phép xem nếu:
+                // 1. Họ là người tạo (Reporter)
+                // 2. Họ có quyền xử lý hiện tại (CanApprove/CanForwardBGD/CanClose)
+                // 3. Họ nằm trong danh sách phê duyệt (đã phê duyệt hoặc sẽ phê duyệt)
+                // 4. Họ có trong lịch sử xử lý (đã từng thao tác)
+                const roles = user?.roles || [];
+                const isManagerOrBGD = roles.includes('VT_MANAGER') || roles.includes('BGD');
+                const isReporter = reportData.report?.CreatedByEmpCode === user?.empCode;
+
+                if (isManagerOrBGD && !isReporter) {
+                    const canDoSomething = actionData.CanApprove || actionData.CanForwardBGD || actionData.CanClose;
+                    const isInApprovalChain = reportData.approvals?.some(a => a.ApproverEmpCode === user?.empCode);
+                    const hasActed = reportData.history?.some(h => h.ActionByEmpCode === user?.empCode);
+
+                    if (!canDoSomething && !isInApprovalChain && !hasActed) {
+                        setData(null);
+                        setActions(null);
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                setData(reportData);
+                setActions(actionData);
             } else {
                 setData(null);
             }
         } catch (err) {
             console.error("Error loading report:", err);
-            // Nếu lỗi 403/401 thì interceptor đã xử lý hoặc sẽ throw ra đây
             setData(null);
         } finally {
             setLoading(false);
@@ -193,6 +239,46 @@ export default function ReportDetail() {
             showToast(e.response?.data?.message || 'Lỗi thêm dòng chi phí', 'error');
         }
     };
+    // ── Chỉnh sửa nội dung (Draft) ──────────────────────────────
+    const startEditing = async () => {
+        await loadMasterData();
+        const r = data.report;
+        setEditForm({
+            reportId: id ? Number(id) : null,
+            planSelectKey: r.SourcePlanSelectKey,
+            occurrenceTime: r.OccurrenceTime,
+            exceptionTypeId: r.ExceptionTypeID,
+            exceptionCauseId: r.ExceptionCauseID,
+            severityCode: r.SeverityCode || 'HIGH',
+            shortDescription: r.ShortDescription,
+            detailedDescription: r.DetailedDescription,
+            responsibleDeptCode: r.ResponsibleDeptCode,
+            mainResponsibleEmpCode: r.MainResponsibleEmpCode,
+            proposedSolution: r.ProposedSolution,
+            hasCost: r.HasCost,
+            coordDepartmentCodesCsv: data.coordDepartments?.map(d => d.DepartmentCode).join(',') || '',
+            impactCodesCsv: data.impacts?.map(i => i.ImpactCode).join(',') || ''
+        });
+        setIsEditing(true);
+    };
+
+    const saveEdit = async () => {
+        setSaving(true);
+        try {
+            const res = await api.post('/reports/draft', editForm);
+            if (res.data.success) {
+                showToast("Đã cập nhật thông tin hồ sơ!", "success");
+                setIsEditing(false);
+                loadDetail();
+            } else {
+                showToast(res.data.message || 'Lỗi cập nhật', 'error');
+            }
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Lỗi cập nhật', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center p-24 space-y-4">
@@ -239,7 +325,7 @@ export default function ReportDetail() {
                 <div>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
                         {r.ReportNo}
-                        <StatusBadge status={r.StatusCode} />
+                        <StatusBadge status={r.StatusCode} text={r.DynamicCurrentStep} />
                     </h1>
                     <div className="text-slate-500 font-medium mt-1">
                         {r.ExceptionTypeName || '--'} {r.ProductName ? `- ${r.ProductName}` : ''}
@@ -251,9 +337,29 @@ export default function ReportDetail() {
 
                     {/* Trình Phản Hồi: REPORTER khi phiếu ở DRAFT / NEED_SUPPLEMENT */}
                     {actions?.CanSubmit && (
-                        <button onClick={submitReport} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200">
-                            <Send className="w-4 h-4 mr-2" /> Trình Phản Hồi
-                        </button>
+                        <>
+                            {data.report.StatusCode === 'DRAFT' && !isEditing && (
+                                <button onClick={startEditing} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700">
+                                    <Plus className="w-4 h-4 mr-2" /> Chỉnh Sửa
+                                </button>
+                            )}
+                            {!isEditing && (
+                                <button onClick={submitReport} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200">
+                                    <Send className="w-4 h-4 mr-2" /> Trình Phản Hồi
+                                </button>
+                            )}
+                        </>
+                    )}
+
+                    {isEditing && (
+                        <div className="flex gap-2">
+                            <button onClick={() => setIsEditing(false)} disabled={saving} className="px-4 py-2 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                                Hủy
+                            </button>
+                            <button onClick={saveEdit} disabled={saving} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm flex items-center transition-all active:scale-95 disabled:opacity-50">
+                                <Save className="w-4 h-4 mr-2" /> {saving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                            </button>
+                        </div>
                     )}
 
                     {/* Ghi Phản Hồi: DEPT_HANDLER khi phiếu WAITING_FEEDBACK & BP mình chưa phản hồi */}
@@ -337,26 +443,185 @@ export default function ReportDetail() {
                             {/* ── Tab Tổng quan ── */}
                             {activeTab === 'overview' && (
                                 <div className="space-y-6 animate-in fade-in">
-                                    <div className="grid grid-cols-4 gap-4">
-                                        <Card label="Ngày phát sinh" value={formatDate(r.OccurrenceTime || r.CreatedAt)} icon={Clock} />
-                                        <Card label="Mức độ" value={r.SeverityName || r.SeverityCode} icon={AlertTriangle} />
-                                        <Card label="Loại phát sinh" value={r.ExceptionTypeName} icon={ListTree} />
-                                        <Card label="Nguyên nhân" value={r.ExceptionCauseName} icon={HelpCircle} />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">Nội dung chi tiết</h3>
-                                            <Field label="Mô tả ngắn" value={r.ShortDescription} />
-                                            <Field label="Mô tả chi tiết" value={r.DetailedDescription} />
-                                            <Field label="Đề xuất xử lý" value={r.ProposedSolution} />
+                                    {isEditing ? (
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mô tả ngắn sự cố (*)</label>
+                                                        <textarea
+                                                            value={editForm.shortDescription}
+                                                            onChange={e => setEditForm({ ...editForm, shortDescription: e.target.value })}
+                                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 font-bold text-slate-800"
+                                                            rows="2"
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-4">
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mức độ (*)</label>
+                                                            <select
+                                                                value={editForm.severityCode}
+                                                                onChange={e => setEditForm({ ...editForm, severityCode: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold"
+                                                            >
+                                                                {masterData?.severities.map(s => <option key={s.SeverityCode} value={s.SeverityCode}>{s.SeverityName}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Loại phát sinh</label>
+                                                            <select
+                                                                value={editForm.exceptionTypeId}
+                                                                onChange={e => setEditForm({ ...editForm, exceptionTypeId: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold"
+                                                            >
+                                                                {masterData?.exceptionTypes.map(t => <option key={t.ExceptionTypeID} value={t.ExceptionTypeID}>{t.ExceptionTypeName}</option>)}
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nguyên nhân</label>
+                                                            <select
+                                                                value={editForm.exceptionCauseId}
+                                                                onChange={e => setEditForm({ ...editForm, exceptionCauseId: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold"
+                                                            >
+                                                                {masterData?.exceptionCauses.map(c => <option key={c.ExceptionCauseID} value={c.ExceptionCauseID}>{c.ExceptionCauseName}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mô tả chi tiết</label>
+                                                        <textarea
+                                                            value={editForm.detailedDescription}
+                                                            onChange={e => setEditForm({ ...editForm, detailedDescription: e.target.value })}
+                                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 text-sm"
+                                                            rows="4"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">BP chịu trách nhiệm</label>
+                                                        <SearchSelect
+                                                            placeholder="Tìm bộ phận..."
+                                                            apiPath="/departments"
+                                                            valueField="DepartmentCode"
+                                                            labelField="DepartmentName"
+                                                            initialValue={editForm.responsibleDeptCode}
+                                                            initialLabel={data.report.ResponsibleDeptName}
+                                                            onSelect={dept => setEditForm({ ...editForm, responsibleDeptCode: dept?.DepartmentCode || '', mainResponsibleEmpCode: '' })}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Người chịu TN chính</label>
+                                                        <SearchSelect
+                                                            placeholder="Tìm nhân viên..."
+                                                            apiPath={`/employees/search${editForm.responsibleDeptCode ? `?departmentCode=${editForm.responsibleDeptCode}` : ''}`}
+                                                            valueField="EmployeeCode"
+                                                            labelField="EmployeeName"
+                                                            initialValue={editForm.mainResponsibleEmpCode}
+                                                            initialLabel={data.report.MainResponsibleEmpName}
+                                                            onSelect={emp => setEditForm({ ...editForm, mainResponsibleEmpCode: emp?.EmployeeCode || '' })}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Đề xuất xử lý</label>
+                                                        <textarea
+                                                            value={editForm.proposedSolution}
+                                                            onChange={e => setEditForm({ ...editForm, proposedSolution: e.target.value })}
+                                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 text-sm"
+                                                            rows="4"
+                                                        />
+                                                    </div>
+                                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-3">Thông báo phản hồi tới</label>
+                                                        <div className="flex flex-wrap gap-2 mb-3">
+                                                            {editForm.coordDepartmentCodesCsv?.split(',').filter(Boolean).map(code => (
+                                                                <div key={code} className="bg-blue-600 text-white text-[11px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
+                                                                    {code}
+                                                                    <XCircle className="w-3 h-3 cursor-pointer" onClick={() => {
+                                                                        const codes = editForm.coordDepartmentCodesCsv.split(',').filter(c => c !== code);
+                                                                        setEditForm({ ...editForm, coordDepartmentCodesCsv: codes.join(',') });
+                                                                    }} />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <SearchSelect
+                                                            placeholder="Thêm bộ phận liên quan..."
+                                                            apiPath="/departments"
+                                                            valueField="DepartmentCode"
+                                                            labelField="DepartmentName"
+                                                            onSelect={dept => {
+                                                                if (!dept) return;
+                                                                const codes = editForm.coordDepartmentCodesCsv ? editForm.coordDepartmentCodesCsv.split(',') : [];
+                                                                if (codes.includes(dept.DepartmentCode)) return;
+                                                                setEditForm({ ...editForm, coordDepartmentCodesCsv: [...codes, dept.DepartmentCode].join(',') });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-3">Mức độ ảnh hưởng</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {masterData?.impactTypes.map(imp => {
+                                                                const val = imp.ImpactCode || imp.Code || imp.Value;
+                                                                const label = imp.ImpactName || imp.ImpactTypeName || val;
+                                                                const codes = editForm.impactCodesCsv ? editForm.impactCodesCsv.split(',') : [];
+                                                                const isChecked = codes.includes(val);
+                                                                return (
+                                                                    <label key={val} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isChecked}
+                                                                            onChange={e => {
+                                                                                let newCodes = isChecked ? codes.filter(c => c !== val) : [...codes, val];
+                                                                                setEditForm({ ...editForm, impactCodesCsv: newCodes.join(',') });
+                                                                            }}
+                                                                            className="w-4 h-4 rounded border-slate-300 text-blue-600"
+                                                                        />
+                                                                        <span className="font-medium">{label}</span>
+                                                                    </label>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={editForm.hasCost}
+                                                            onChange={e => setEditForm({ ...editForm, hasCost: e.target.checked })}
+                                                            className="w-5 h-5 text-blue-600 rounded"
+                                                        />
+                                                        <span className="font-bold text-sm text-slate-700">Có phát sinh chi phí</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="space-y-4">
-                                            <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">Phân công</h3>
-                                            <Field label="BP chịu trách nhiệm" value={r.ResponsibleDeptName || r.ResponsibleDeptCode} />
-                                            <Field label="Người chịu TN chính" value={r.MainResponsibleEmpName || r.MainResponsibleEmpCode} />
-                                            <Field label="Mã Kế hoạch ERP" value={r.PlanSelectKey} />
-                                        </div>
-                                    </div>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-4 gap-4">
+                                                <Card label="Ngày phát sinh" value={formatDate(r.OccurrenceTime || r.CreatedAt)} icon={Clock} />
+                                                <Card label="Mức độ" value={r.SeverityName || r.SeverityCode} icon={AlertTriangle} />
+                                                <Card label="Loại phát sinh" value={r.ExceptionTypeName} icon={ListTree} />
+                                                <Card label="Nguyên nhân" value={r.ExceptionCauseName} icon={HelpCircle} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div className="space-y-4">
+                                                    <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">Nội dung chi tiết</h3>
+                                                    <Field label="Mô tả ngắn" value={r.ShortDescription} />
+                                                    <Field label="Mô tả chi tiết" value={r.DetailedDescription} />
+                                                    <Field label="Đề xuất xử lý" value={r.ProposedSolution} />
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">Phân công</h3>
+                                                    <Field label="BP chịu trách nhiệm" value={r.ResponsibleDeptName || r.ResponsibleDeptCode} />
+                                                    <Field label="Người chịu TN chính" value={r.MainResponsibleEmpCode} />
+                                                    <Field label="Mã Kế hoạch ERP" value={r.PlanSelectKey} />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 

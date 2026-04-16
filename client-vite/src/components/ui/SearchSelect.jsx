@@ -23,10 +23,24 @@ export default function SearchSelect({
     const searchTimeout = useRef(null);
 
     useEffect(() => {
-        if (initialValue) {
-            setSelected({ [valueField]: initialValue, [labelField]: initialLabel });
+        if (initialValue !== undefined && initialValue !== null && initialValue !== "") {
+            // Chỉ cập nhật nếu giá trị thực sự khác biệt để tránh mất nhãn (label) khi state cha thay đổi
+            if (!selected || selected[valueField] !== initialValue) {
+                setSelected({ [valueField]: initialValue, [labelField]: initialLabel });
+            }
+        } else {
+            setSelected(null);
         }
-    }, [initialValue, initialLabel, valueField, labelField]);
+    }, [initialValue, initialLabel, valueField, labelField, selected]);
+
+    // Reset options when apiPath changes (e.g. department dependency)
+    useEffect(() => {
+        setOptions([]);
+        setSearch("");
+        if (isOpen) {
+            fetchOptions("");
+        }
+    }, [apiPath]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -139,7 +153,7 @@ export default function SearchSelect({
                                 >
                                     <div className="font-bold text-slate-800 text-sm">{opt[labelField]}</div>
                                     {subLabelField && opt[subLabelField] && (
-                                        <div className="text-xs text-slate-500 mt-0.5">{opt[subLabelField]}- {opt.UnitName}</div>
+                                        <div className="text-xs text-slate-500 mt-0.5">{opt[subLabelField]}</div>
                                     )}
                                 </div>
                             ))

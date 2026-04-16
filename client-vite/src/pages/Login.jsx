@@ -19,12 +19,14 @@ export default function Login() {
         try {
             const { data } = await api.post('/auth/login', formData);
             if (data.success) {
+                console.log(data.data.user)
                 showToast('Đăng nhập thành công!', 'success');
                 login({
                     token: data.data.token,
                     userName: data.data.user.userName,
                     empCode: data.data.user.employeeCode,
-                    deptCode: null,
+                    deptCode: data.data.user.departmentCode,
+                    roles: data.data.user.roles,
                 });
             } else {
                 showToast(data.message || 'Đăng nhập thất bại', 'error');

@@ -4,18 +4,25 @@ import { Search, Plus, Filter, Eye } from 'lucide-react';
 import api, { formatMoney, formatDate } from '../utils/api';
 import StatusBadge from '../components/ui/StatusBadge';
 import { useUI } from '../context/UIContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ReportList() {
     const { showToast } = useUI();
+    const { user } = useAuth();
     const [keyword, setKeyword] = useState('');
     const [status, setStatus] = useState('');
+    const [onlyMyPending, setOnlyMyPending] = useState(true);
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const query = `?pageNumber=1&pageSize=50&keyword=${encodeURIComponent(keyword)}&statusCode=${status}`;
+            const roles = user?.roles || [];
+            const isManagerOrBGD = roles.includes('VT_MANAGER') || roles.includes('BGD');
+            const onlyPending = (isManagerOrBGD && onlyMyPending) ? '&onlyNeedMyApproval=true' : '';
+
+            const query = `?pageNumber=1&pageSize=50&keyword=${encodeURIComponent(keyword)}&statusCode=${status}${onlyPending}`;
             const { data } = await api.get(`/reports${query}`);
             console.log(data)
             if (data.success) {
@@ -73,6 +80,19 @@ export default function ReportList() {
                             <option value="CLOSED">Đã đóng</option>
                         </select>
                     </div>
+
+                    {(user?.roles?.includes('VT_MANAGER') || user?.roles?.includes('BGD')) && (
+                        <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-white transition-all shadow-sm">
+                            <input
+                                type="checkbox"
+                                checked={onlyMyPending}
+                                onChange={e => setOnlyMyPending(e.target.checked)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-bold text-slate-700 select-none whitespace-nowrap">Chờ tôi duyệt</span>
+                        </label>
+                    )}
+
                     <button type="submit" className="bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-slate-900 transition-colors shadow-sm active:scale-95">
                         Tìm kiếm
                     </button>
@@ -124,7 +144,7 @@ export default function ReportList() {
                                             {r.HasCost ? formatMoney(r.EstimatedTotalCost) : '-'}
                                         </td>
                                         <td className="p-5 text-center whitespace-nowrap">
-                                            <StatusBadge status={r.StatusCode} />
+                                            <StatusBadge status={r.StatusCode} text={r.DynamicCurrentStep} />
                                         </td>
                                         <td className="p-5 text-center">
                                             <Link to={`/reports/${r.ReportID}`} className="inline-flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">

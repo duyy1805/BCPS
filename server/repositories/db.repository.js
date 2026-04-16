@@ -6,14 +6,14 @@ class DbRepository {
         const request = pool.request();
 
         for (const input of inputs) {
+            const type = input.length ? input.type(input.length) : input.type;
+
             if (input.output) {
-                if (input.length) {
-                    request.output(input.name, input.type(input.length));
-                } else {
-                    request.output(input.name, input.type);
-                }
+                // Đăng ký output (có kèm giá trị khởi tạo nếu có)
+                request.output(input.name, type, input.value);
             } else {
-                request.input(input.name, input.type, input.value);
+                // Đăng ký input thông thường
+                request.input(input.name, type, input.value);
             }
         }
 
