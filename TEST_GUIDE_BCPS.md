@@ -1,84 +1,61 @@
-# CẨM NANG KIỂM THỬ NGHIỆP VỤ BCPS (CHI TIẾT)
+# QUY TRÌNH NGHIỆP VỤ CHI TIẾT HỆ THỐNG BCPS
 
-Tài liệu này hướng dẫn chi tiết từng bước thực hiện trên giao diện để kiểm tra tính đúng đắn của toàn bộ phần mềm BCPS.
-
----
-
-## 0. CHUẨN BỊ (BẮT BUỘC)
-Trước khi test, hãy đảm bảo:
-1.  Đã chạy file SQL **`update_business_logic_v3.sql`** trong SSMS.
-2.  Đã cấu hình đúng `API_URL` trong file `src/utils/api.js`.
-3.  Sử dụng trình duyệt Chrome/Edge để có trải nghiệm tốt nhất.
+Tài liệu này mô tả chi tiết các bước vận hành, đơn vị thực hiện và sự thay đổi trạng thái của một phiếu báo cáo phát sinh (BCPS).
 
 ---
 
-## 1. VAI TRÒ: NGƯỜI LẬP (REPORTER) - BƯỚC KHỞI TẠO
-**Mục tiêu**: Tạo thành công một phiếu báo cáo phát sinh từ dữ liệu ERP.
+## 1. LUỒNG A: PHÁT SINH THÔNG THƯỜNG (KHÔNG CHI PHÍ)
+*Áp dụng cho các sự cố nhỏ, chỉ cần lấy ý kiến và Trưởng phòng phê duyệt để đóng phiếu.*
 
-*   **Bước 1**: Đăng nhập với tài khoản có Role `REPORTER`.
-*   **Bước 2**: Tại trang chủ, nhấn nút **[+ Tạo báo cáo]**.
-*   **Bước 3 (Chọn kế hoạch)**:
-    *   Gõ mã Lệnh sản xuất hoặc mã hàng vào ô tìm kiếm ERP.
-    *   Chọn một dòng kế hoạch từ danh sách xổ xuống.
-    *   *Kiểm tra*: Các thông tin "Sản phẩm", "Công đoạn", "Phòng ban phát sinh" phải tự động điền (Auto-fill).
-*   **Bước 4 (Nhập thông tin)**:
-    *   Chọn **Mức độ ảnh hưởng** (VD: Cao/Trung bình).
-    *   Nhập **Mô tả ngắn** và **Mô tả chi tiết**.
-    *   **Bộ phận chịu TN**: Gõ tìm kiếm và chọn bộ phận trực tiếp gây ra lỗi.
-    *   **Cá nhân chịu TN**: Chọn nhân viên cụ thể trong bộ phận đó.
-    *   **Phối hợp với**: Chọn thêm các bộ phận cần lấy ý kiến (VD: Kho, QC). *Lưu ý: Quản lý đơn hàng và Kho thường là bắt buộc.*
-    *   **Chi phí**: Tick chọn "Có phát sinh chi phí" nếu bạn muốn test luồng duyệt nâng cao.
-*   **Bước 5**: Nhấn **[Lưu Nháp]**.
-    *   *Kỳ vọng*: Hệ thống chuyển về trang Chi tiết. Badge hiện **"Mới tạo (Nháp)"**.
-*   **Bước 6**: Nhấn **[Trình Phản Hồi]**.
-    *   *Kỳ vọng*: Badge đổi thành **"Chờ [Bộ phận] phản hồi"**.
+| Bước | Đơn vị thực hiện | Thao tác trên giao diện | Trạng thái hiển thị (Badge) | Ý nghĩa nghiệp vụ |
+|:---:|:---|:---|:---|:---|
+| **1** | **Người lập (Reporter)** | Nhấn "Tạo báo cáo", chọn kế hoạch ERP, nhập mô tả. Chọn BP chịu TN. **Không** tick "Có chi phí". Nhấn **Lưu Nháp**. | `Mới tạo (Nháp)` | Ghi nhận sự cố sơ bộ vào hệ thống. |
+| **2** | **Người lập (Reporter)** | Kiểm tra lại thông tin và nhấn **Trình phản hồi**. | `Chờ [Tên BP] phản hồi` | Chuyển bóng sang các bộ phận liên quan để lấy ý kiến. |
+| **3** | **BP Phối hợp (Dept)** | Vào mục phản hồi, nhập đánh giá nguyên nhân và giải pháp khắc phục. Nhấn **Lưu Phản Hồi**. | `Chờ trình duyệt` | Xác nhận trách nhiệm và phương án xử lý từ các bên. |
+| **4** | **Người lập (Reporter)** | Sau khi thấy badge hiện "Chờ trình duyệt", nhấn nút **Trình phê duyệt**. | `Chờ TP. Vật tư duyệt` | Đưa phiếu lên cấp quản lý để chốt giải pháp. |
+| **5** | **TP. Vật tư (Manager)** | Kiểm tra nội dung. Nhấn **Duyệt (Approve)**. | `Đã phê duyệt` | Lãnh đạo đồng ý với phương án xử lý. |
+| **6** | **Người lập (Reporter)** | Thực hiện giải pháp ngoài thực tế, sau đó vào phiếu nhấn **Đóng báo cáo**. | `Đã đóng / Hoàn thành` | Kết thúc hoàn toàn vụ việc. |
 
 ---
 
-## 2. VAI TRÒ: BỘ PHẬN PHỐI HỢP (DEPT_HANDLER)
-**Mục tiêu**: Ghi nhận ý kiến đánh giá và nhập chi phí dự kiến.
+## 2. LUỒNG B: PHÁT SINH NGHIỆM TRỌNG (CÓ CHI PHÍ & DUYỆT BGD)
+*Áp dụng cho sự cố gây thiệt hại kinh tế, cần xác minh chi phí từ Kho/QLDH và BGD duyệt.*
 
-*   **Bước 1**: Đăng nhập với tài khoản thuộc bộ phận đã được chọn phối hợp ở bước trước.
-*   **Bước 2**: Tại danh sách, chọn phiếu có trạng thái "Chờ phản hồi".
-*   **Bước 3**: Nhấn nút **[Ghi Phản Hồi]**.
-    *   Nhập nội dung đánh giá nguyên nhân.
-    *   Nhập đề xuất khắc phục.
-    *   Nhấn **[Lưu Phản Hồi]**.
-*   **Bước 4 (Nếu có chi phí)**: Nếu phiếu yêu cầu tính chi phí, nhấn nút **[+ Thêm chi phí]**.
-    *   Chọn Loại chi phí, Bộ phận chịu phí.
-    *   Nhập số lượng, đơn giá (Hệ thống tự nhân thành tiền).
-    *   Nhấn **[Lưu]**.
-*   **Kết quả**: Sau khi tất cả các bộ phận phối hợp đã phản hồi xong, badge sẽ đổi thành **"Chờ trình duyệt"**.
+| Bước | Đơn vị thực hiện | Thao tác trên giao diện | Trạng thái hiển thị (Badge) | Ý nghĩa nghiệp vụ |
+|:---:|:---|:---|:---|:---|
+| **1** | **Người lập (Reporter)** | Tạo phiếu, **Tick chọn "Có phát sinh chi phí"**. Chọn phối hợp với Kho & Quản lý đơn hàng. Nhấn **Trình phản hồi**. | `Chờ Kho & QLDH phản hồi` | Bắt đầu quy trình xác minh thiệt hại. |
+| **2** | **Kho / QLDH / Phối hợp** | Nhấn **Ghi Phản Hồi**. Sau đó nhấn **Thêm chi phí** để nhập số lượng hàng hỏng, vật tư hao phí, đơn giá. | `Chờ trình duyệt` | Số hóa thiệt hại thành tiền (VNĐ). |
+| **3** | **Người lập (Reporter)** | Nhấn **Trình phê duyệt**. | `Chờ TP. Vật tư duyệt` | Chuyển lên cấp quản lý kiểm tra con số chi phí. |
+| **4** | **TP. Vật tư (Manager)** | Thấy chi phí/tính chất nghiêm trọng. Nhấn nút **Duyệt & Gửi BGD (Forward)**. | `Chờ Ban Giám đốc duyệt` | Vượt thẩm quyền phòng, cần sếp tổng quyết định. |
+| **5** | **Ban Giám Đốc (BGD)** | Xem xét tổng thể thiệt hại và giải pháp. Nhấn **Duyệt cuối cùng**. | `Đã phê duyệt` | Phê duyệt ngân sách xử lý sai sót. |
+| **6** | **Các bên liên quan** | Triển khai khắc phục. | `Đã phê duyệt` | (Đang thực hiện ngoài thực tế) |
+| **7** | **Người lập / Quản lý** | Nhập kết quả xử lý cuối cùng và nhấn **Đóng báo cáo**. | `Đã đóng / Hoàn thành` | Lưu trữ hồ sơ làm bài học kinh nghiệm (Lesson Learned). |
 
 ---
 
-## 3. VAI TRÒ: NGƯỜI LẬP (REPORTER) - TRÌNH PHÊ DUYỆT
-*   **Bước 1**: Reporter vào lại phiếu khi thấy trạng thái đã là "Chờ trình duyệt".
-*   **Bước 2**: Nhấn nút **[Trình Phê Duyệt]**.
-    *   *Kỳ vọng*: Badge đổi sang **"Chờ TP. Vật tư phê duyệt"**.
+## 3. CÁC TÌNH HUỐNG NGOẠI LỆ (EXCEPTION HANDLING)
+
+### Tình huống 1: Thông tin sơ sài (Cấp trên trả về)
+*   **Người thực hiện**: TP. Vật tư hoặc BGD.
+*   **Thao tác**: Nhấn nút **Yêu cầu bổ sung (Supplement)**.
+*   **Trạng thái**: Badge đổi thành `Chờ bổ sung thông tin`.
+*   **Hành động**: Người lập (Reporter) phải vào "Chỉnh sửa" lại nội dung và "Trình phản hồi" lại từ đầu.
+
+### Tình huống 2: Giải pháp không khả thi (Bị bác bỏ)
+*   **Người thực hiện**: Cấp quản lý.
+*   **Thao tác**: Nhấn nút **Từ chối (Reject)**.
+*   **Trạng thái**: Badge đổi thành `Đã từ chối`.
+*   **Hành động**: Phiếu kết thúc tại đây, người lập phải tạo phiếu mới với giải pháp khác.
 
 ---
 
-## 4. VAI TRÒ: LÃNH ĐẠO (VT_MANAGER / BGD)
-**Mục tiêu**: Phê duyệt hoặc yêu cầu bổ sung thông tin.
+## 4. BẢNG TỔNG HỢP TRÁCH NHIỆM
 
-*   **Bước 1**: Đăng nhập tài khoản TP. Vật tư (`VT_MANAGER`).
-*   **Bước 2**: Tại phiếu đang chờ duyệt, bạn có 3 lựa chọn:
-    1.  **Duyệt (Approve)**: Nếu chi phí thấp/không có chi phí và mọi thứ ổn. -> Phiếu kết thúc luồng duyệt, sang "Đã phê duyệt".
-    2.  **Trả lại (Need Supplement)**: Nếu nội dung sơ sài. -> Phiếu quay về cho Reporter, badge hiện "Chờ bổ sung".
-    3.  **Chuyển BGD (Forward)**: Nếu chi phí lớn hoặc cần ý kiến sếp. -> Badge đổi thành **"Chờ Ban Giám đốc phê duyệt"**.
-*   **Bước 3 (Nếu chuyển BGD)**: Tài khoản `BGD` vào nhấn **[Duyệt cuối cùng]**.
+| Phòng ban / Vai trò | Lập phiếu | Phản hồi chuyên môn | Nhập chi phí | Phê duyệt | Đóng phiếu |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Nhân viên xưởng (Reporter)** | **Chính (R)** | **Hỗ trợ** | - | - | **Chính (R)** |
+| **Bộ phận Kho / QLDH** | - | **Chính (R)** | **Chính (R)** | - | - |
+| **Trưởng phòng Vật tư** | - | - | - | **Chính (A)** | **Giám sát** |
+| **Ban Giám Đốc** | - | - | - | **Quyết định (A)** | - |
 
----
-
-## 5. BƯỚC CUỐI: ĐÓNG PHIẾU (CLOSURE)
-*   Sau khi phiếu ở trạng thái **"Đã phê duyệt"**, người lập (Reporter) hoặc Quản lý vào xác nhận kết quả xử lý thực tế và nhấn nút **[Đóng báo cáo]**.
-*   *Kết quả cuối cùng*: Trạng thái **"Đã đóng / Hoàn thành"**. Phiếu không thể thay đổi nội dung được nữa.
-
----
-
-## KHÁC: KIỂM TRA LỊCH SỬ (AUDIT TRAIL)
-Tại mỗi phiếu, hãy kéo xuống mục **"Lịch sử xử lý"** để kiểm tra:
-- [ ] Có ghi lại đúng tên người thực hiện không?
-- [ ] Thời gian thực hiện có chính xác không?
-- [ ] Ghi chú (Note) có hiển thị đúng các thao tác không?
+*(Ghi chú: R = Responsible - Người thực hiện; A = Accountable - Người chịu trách nhiệm phê duyệt)*
