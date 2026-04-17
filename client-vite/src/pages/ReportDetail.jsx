@@ -348,14 +348,33 @@ console.log(user)
     return (
         <div className="max-w-8xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
             {/* Header Card */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between flex-wrap gap-4">
+            <div className={cn(
+                "p-6 rounded-2xl border shadow-sm flex items-center justify-between flex-wrap gap-4 transition-all duration-300",
+                r.HasCost 
+                    ? "bg-gradient-to-r from-white to-orange-50/30 border-orange-200 shadow-orange-100/50" 
+                    : "bg-white border-slate-200"
+            )}>
                 <div>
-                    <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                    <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3 flex-wrap">
                         {r.ReportNo}
-                        <StatusBadge status={r.StatusCode} text={r.DynamicCurrentStep} />
+                        <div className="flex gap-2">
+                            <StatusBadge status={r.StatusCode} text={r.DynamicCurrentStep} />
+                            {r.HasCost && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 text-white rounded-full text-[10px] font-black tracking-tighter shadow-sm animate-pulse-subtle">
+                                    <DollarSign className="w-3 h-3" />
+                                    CÓ CHI PHÍ
+                                </span>
+                            )}
+                        </div>
                     </h1>
-                    <div className="text-slate-500 font-medium mt-1">
-                        {r.ExceptionTypeName || '--'} {r.ProductName ? `- ${r.ProductName}` : ''}
+                    <div className="text-slate-500 font-medium mt-1 flex items-center gap-3 flex-wrap">
+                        <span>{r.ExceptionTypeName || '--'} {r.ProductName ? `- ${r.ProductName}` : ''}</span>
+                        {r.HasCost && totalCost > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-bold">
+                                <DollarSign className="w-3 h-3" />
+                                Tổng dự kiến: {formatMoney(totalCost)}
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -619,8 +638,8 @@ console.log(user)
                                                         <input
                                                             type="checkbox"
                                                             checked={editForm.hasCost}
-                                                            onChange={e => setEditForm({ ...editForm, hasCost: e.target.checked })}
-                                                            className="w-5 h-5 text-blue-600 rounded"
+                                                            disabled={true}
+                                                            className="w-5 h-5 text-blue-600 rounded opacity-50 cursor-not-allowed"
                                                         />
                                                         <span className="font-bold text-sm text-slate-700">Có phát sinh chi phí</span>
                                                     </div>
@@ -753,7 +772,7 @@ console.log(user)
                         <div className="relative border-l-2 border-slate-100 ml-3 space-y-6 pl-5">
                             {history.length > 0 ? history.map((h, i) => (
                                 <div key={i} className="relative">
-                                    <div className="absolute -left-[27px] bg-blue-500 w-3 h-3 rounded-full border-2 border-white shadow-sm shadow-blue-200 top-1.5"></div>
+                                    <div className="absolute -left-6.75 bg-blue-500 w-3 h-3 rounded-full border-2 border-white shadow-sm shadow-blue-200 top-1.5"></div>
                                     <div className="font-bold text-slate-800 text-sm">{h.ActionName || '--'}</div>
                                     <div className="text-xs text-slate-500 mt-1">{formatDate(h.ActionAt)}</div>
                                     <div className="text-sm font-medium text-slate-600 mt-1">Bởi: {h.ActionByEmpName}</div>
@@ -787,7 +806,20 @@ console.log(user)
                                 <div className="flex flex-col justify-end pb-1">
                                     {r.HasCost && (
                                         <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200 w-full hover:bg-white hover:border-blue-200 transition-colors">
-                                            <input type="checkbox" checked={respForm.hasDeptCost} onChange={e => setRespForm({ ...respForm, hasDeptCost: e.target.checked })} className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                                            <input 
+                                                type="checkbox" 
+                                                checked={respForm.hasDeptCost} 
+                                                onChange={e => {
+                                                    const checked = e.target.checked;
+                                                    if (!checked && respForm.costs.length > 0) {
+                                                        if (!window.confirm('Hành động này sẽ xóa các dòng chi phí đã nhập. Bạn có chắc chắn?')) return;
+                                                        setRespForm({ ...respForm, hasDeptCost: false, costs: [] });
+                                                    } else {
+                                                        setRespForm({ ...respForm, hasDeptCost: checked });
+                                                    }
+                                                }} 
+                                                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" 
+                                            />
                                             <span className="font-bold text-sm text-slate-700 select-none">BP CÓ phát sinh chi phí</span>
                                         </label>
                                     )}

@@ -122,3 +122,29 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: var(--color-slate-600);
 }
+
+@layer utilities {
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse-subtle {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.5; 
+        transform: scale(0.95);
+    }
+  }
+
+  @keyframes glow {
+    from { box-shadow: 0 0 5px -1px var(--color-orange-400); }
+    to { box-shadow: 0 0 15px 2px var(--color-orange-500); }
+  }
+}

@@ -5,6 +5,7 @@ import api, { formatMoney, formatInputNumber, parseInputNumber } from '../utils/
 import { useUI } from '../context/UIContext';
 import { cn } from '../context/UIContext';
 import SearchSelect from '../components/ui/SearchSelect';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 export default function ReportCreate() {
     const navigate = useNavigate();
@@ -49,6 +50,8 @@ export default function ReportCreate() {
         note: '',
         useManual: false
     });
+
+    const [confirmModal, setConfirmModal] = useState({ open: false });
 
     useEffect(() => {
         const loadMasterData = async () => {
@@ -389,7 +392,27 @@ export default function ReportCreate() {
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <label className="flex items-start gap-4 cursor-pointer group p-2">
                             <div className="relative flex items-center mt-1">
-                                <input type="checkbox" checked={form.hasCost} onChange={e => setForm({ ...form, hasCost: e.target.checked })} className="sr-only" />
+                                <input 
+                                    type="checkbox" 
+                                    checked={form.hasCost} 
+                                    onChange={e => {
+                                        const checked = e.target.checked;
+                                        if (!checked && form.costs.length > 0) {
+                                            setConfirmModal({
+                                                open: true,
+                                                title: 'Xóa danh sách chi phí?',
+                                                message: 'Hành động này sẽ xóa toàn bộ các dòng chi phí đã nhập. Bạn có chắc chắn muốn tiếp tục?',
+                                                onConfirm: () => {
+                                                    setForm({ ...form, hasCost: false, costs: [] });
+                                                    setConfirmModal({ open: false });
+                                                }
+                                            });
+                                        } else {
+                                            setForm({ ...form, hasCost: checked });
+                                        }
+                                    }} 
+                                    className="sr-only" 
+                                />
                                 <div className={cn("block w-10 h-6 rounded-full transition-colors", form.hasCost ? "bg-blue-500" : "bg-slate-300")}></div>
                                 <div className={cn("absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform", form.hasCost ? "translate-x-4" : "")}></div>
                             </div>
@@ -534,6 +557,16 @@ export default function ReportCreate() {
                     </div>
                 </div>
             </div>
+
+            <ConfirmModal 
+                isOpen={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal({ open: false })}
+                confirmText="Xóa dữ liệu"
+                cancelText="Quay lại"
+            />
         </div>
     );
 }
