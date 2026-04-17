@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Save, X, AlertCircle, Info, FileText, Plus } from 'lucide-react';
-import api from '../utils/api';
+import { Search, Save, X, AlertCircle, Info, FileText, Plus, Trash2, DollarSign } from 'lucide-react';
+import api, { formatMoney, formatInputNumber, parseInputNumber } from '../utils/api';
 import { useUI } from '../context/UIContext';
 import { cn } from '../context/UIContext';
 import SearchSelect from '../components/ui/SearchSelect';
@@ -16,7 +16,8 @@ export default function ReportCreate() {
         exceptionTypes: [],
         exceptionCauses: [],
         impactTypes: [],
-        severities: []
+        severities: [],
+        costTypes: []
     });
 
     const [erpSearch, setErpSearch] = useState('');
@@ -34,8 +35,19 @@ export default function ReportCreate() {
         severityCode: '',
         dueDate: '', // Hạn hoàn thành
         hasCost: false,
+        costs: [], // Danh sách chi phí khởi tạo
         impactCodes: [],
         coordDeptCodes: []
+    });
+
+    const [costForm, setCostForm] = useState({
+        costTypeId: '',
+        costItemDesc: '',
+        qty: '',
+        unitCost: '',
+        manualAmount: '',
+        note: '',
+        useManual: false
     });
 
     useEffect(() => {
@@ -47,7 +59,8 @@ export default function ReportCreate() {
                         exceptionTypes: data.data.exceptionTypes || [],
                         exceptionCauses: data.data.exceptionCauses || [],
                         impactTypes: data.data.impactTypes || [],
-                        severities: data.data.severities || []
+                        severities: data.data.severities || [],
+                        costTypes: data.data.costTypes || []
                     });
                     if (data.data.exceptionTypes?.length > 0) setForm(prev => ({ ...prev, typeId: data.data.exceptionTypes[0].ExceptionTypeID }));
                     if (data.data.exceptionCauses?.length > 0) setForm(prev => ({ ...prev, causeId: data.data.exceptionCauses[0].ExceptionCauseID }));
@@ -96,6 +109,27 @@ export default function ReportCreate() {
         setForm(prev => ({ ...prev, coordDeptCodes: prev.coordDeptCodes.filter(c => c !== code) }));
     };
 
+    const addCostLine = () => {
+        if (!costForm.costTypeId) return showToast('Vui lòng chọn Loại Chi Phí', 'warning');
+        if (!costForm.costItemDesc) return showToast('Vui lòng nhập Mô tả khoản chi phí', 'warning');
+        if (costForm.useManual && !costForm.manualAmount) return showToast('Vui lòng nhập Thành Tiền', 'warning');
+        if (!costForm.useManual && (!costForm.qty || !costForm.unitCost)) return showToast('Vui lòng nhập Số lượng và Đơn giá', 'warning');
+
+        const typeObj = masterData.costTypes.find(t => t.CostTypeID == costForm.costTypeId);
+        const newLine = {
+            ...costForm,
+            costTypeName: typeObj?.CostTypeName || 'N/A',
+            amount: costForm.useManual ? Number(costForm.manualAmount) : (Number(costForm.qty) * Number(costForm.unitCost))
+        };
+
+        setForm(prev => ({ ...prev, costs: [...prev.costs, newLine] }));
+        setCostForm({ costTypeId: '', costItemDesc: '', qty: '', unitCost: '', manualAmount: '', note: '', useManual: false });
+    };
+
+    const removeCostLine = (index) => {
+        setForm(prev => ({ ...prev, costs: prev.costs.filter((_, i) => i !== index) }));
+    };
+
     const submitDraft = async () => {
         if (!selectedPlan) return showToast('Vui lòng chọn kế hoạch ERP', 'warning');
         if (!form.shortDesc) return showToast('Vui lòng nhập mô tả ngắn', 'warning');
@@ -132,24 +166,42 @@ export default function ReportCreate() {
 
             const res = await api.post('/reports/draft', body);
             if (res.data.success) {
-                const reportId = res.data.data.reportId;
+                const newReportId = res.data.data.reportId;
 
+                // Nếu có file, upload file
                 if (file) {
                     const formData = new FormData();
                     formData.append('file', file);
-                    formData.append('attachmentScope', 'REPORT');
-                    await api.post(`/reports/${reportId}/attachments`, formData, {
+                    await api.post(`/reports/${newReportId}/attachments`, formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
                 }
 
-                showToast('Đã lưu nháp hồ sơ thành công!', 'success');
-                navigate(`/reports/${reportId}`);
-            } else {
-                showToast(res.data.message || 'Lỗi lưu nháp', 'error');
+                // Lưu danh sách chi phí (nếu có)
+                if (form.hasCost && form.costs.length > 0) {
+                    for (const cost of form.costs) {
+                        const costPayload = {
+                            departmentCode: form.deptCode, // Mặc định bộ phận chịu trách nhiệm
+                            costTypeId: Number(cost.costTypeId),
+                            costItemDesc: cost.costItemDesc,
+                            note: cost.note || null,
+                            qty: cost.useManual ? null : Number(cost.qty),
+                            unitCost: cost.useManual ? null : Number(cost.unitCost),
+                            manualAmount: cost.useManual ? Number(cost.manualAmount) : null
+                        };
+                        try {
+                            await api.post(`/reports/${newReportId}/cost-lines`, costPayload);
+                        } catch (err) {
+                            console.error("Lỗi lưu dòng chi phí:", err);
+                        }
+                    }
+                }
+
+                showToast('Lưu bản nháp thành công!', 'success');
+                navigate(`/reports/${newReportId}`);
             }
         } catch (err) {
-            showToast(err.response?.data?.message || 'Lỗi lưu nháp', 'error');
+            showToast(err.response?.data?.message || 'Lỗi lưu bản nháp', 'error');
         } finally {
             setSaving(false);
         }
@@ -350,6 +402,129 @@ export default function ReportCreate() {
                             {form.hasCost ? <AlertCircle className="w-5 h-5 shrink-0" /> : <Info className="w-4 h-4 shrink-0 mt-0.5" />}
                             {form.hasCost ? 'Báo cáo CÓ CHI PHÍ sẽ do BAN GIÁM ĐỐC phê duyệt.' : 'Báo cáo KHÔNG chi phí sẽ được Trưởng phòng Vật tư duyệt.'}
                         </div>
+
+                        {form.hasCost && (
+                            <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-4 animate-in fade-in slide-in-from-top-4">
+                                <h4 className="text-sm font-bold text-amber-800 flex items-center gap-2">
+                                    <DollarSign className="w-4 h-4" /> Chi phí phát sinh dự kiến
+                                </h4>
+
+                                {/* Bảng danh sách chi phí đã thêm */}
+                                {form.costs.length > 0 && (
+                                    <div className="bg-white border border-amber-200 rounded-xl overflow-hidden mb-4">
+                                        <table className="w-full text-xs">
+                                            <thead className="bg-amber-100 text-amber-900 font-bold uppercase tracking-wider text-[10px]">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">Loại / Mô tả</th>
+                                                    <th className="px-4 py-2 text-right">Thành Tiền</th>
+                                                    <th className="px-4 py-2 text-center w-10"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-amber-100">
+                                                {form.costs.map((c, idx) => (
+                                                    <tr key={idx} className="hover:bg-amber-50">
+                                                        <td className="px-4 py-2">
+                                                            <div className="font-bold text-slate-800">{c.costTypeName}</div>
+                                                            <div className="text-slate-500 text-[11px]">{c.costItemDesc}</div>
+                                                        </td>
+                                                        <td className="px-4 py-2 text-right font-black text-slate-800">{formatMoney(c.amount)}</td>
+                                                        <td className="px-4 py-2 text-center">
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => removeCostLine(idx)} 
+                                                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                {/* Form nhập chi phí */}
+                                <div className="bg-white/50 p-4 rounded-xl border border-dashed border-amber-300 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1">Loại Chi Phí (*)</label>
+                                            <select
+                                                value={costForm.costTypeId}
+                                                onChange={e => setCostForm({ ...costForm, costTypeId: e.target.value })}
+                                                className="w-full px-3 py-2 border border-amber-200 rounded-xl bg-white text-sm font-bold outline-none"
+                                            >
+                                                <option value="">-- Chọn loại --</option>
+                                                {masterData.costTypes.map(ct => <option key={ct.CostTypeID} value={ct.CostTypeID}>{ct.CostTypeName}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1">Mô tả Khoản Chi Phí (*)</label>
+                                            <input
+                                                type="text"
+                                                value={costForm.costItemDesc}
+                                                onChange={e => setCostForm({ ...costForm, costItemDesc: e.target.value })}
+                                                className="w-full px-3 py-2 border border-amber-200 rounded-xl bg-white text-sm font-bold outline-none"
+                                                placeholder="VD: Chi phí vật tư..."
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => setCostForm({ ...costForm, useManual: false })} className={cn("flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all", !costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500")}>
+                                            SL × Đơn giá
+                                        </button>
+                                        <button type="button" onClick={() => setCostForm({ ...costForm, useManual: true })} className={cn("flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all", costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500")}>
+                                            Nhập tiền trực tiếp
+                                        </button>
+                                    </div>
+
+                                    {!costForm.useManual ? (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Số Lượng</label>
+                                                <input
+                                                    type="text"
+                                                    value={formatInputNumber(costForm.qty)}
+                                                    onChange={e => setCostForm({ ...costForm, qty: parseInputNumber(e.target.value) })}
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-bold outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Đơn Giá (VNĐ)</label>
+                                                <input
+                                                    type="text"
+                                                    value={formatInputNumber(costForm.unitCost)}
+                                                    onChange={e => setCostForm({ ...costForm, unitCost: parseInputNumber(e.target.value) })}
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-bold outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-red-500 uppercase mb-1">Thành Tiền (VNĐ) (*)</label>
+                                            <input
+                                                type="text"
+                                                value={formatInputNumber(costForm.manualAmount)}
+                                                onChange={e => setCostForm({ ...costForm, manualAmount: parseInputNumber(e.target.value) })}
+                                                className="w-full px-3 py-2 border border-red-200 bg-red-50/30 rounded-xl text-sm font-black text-red-900 outline-none"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        onClick={addCostLine}
+                                        className="w-full py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 flex items-center justify-center gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" /> Thêm khoản chi phí
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* File Upload */}
