@@ -16,7 +16,7 @@ class AuthRepository extends DbRepository {
         if (!recordsets || recordsets.length === 0 || recordsets[0].length === 0) {
             return null;
         }
-
+        
         const user = recordsets[0][0];
         const roles = recordsets[1] ? recordsets[1].map(r => r.RoleCode) : [];
 

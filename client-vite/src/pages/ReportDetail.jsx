@@ -4,7 +4,7 @@ import {
     Clock, AlertTriangle, ListTree, HelpCircle, Send,
     MessageSquare, DollarSign, CheckSquare, Archive, CheckCircle, XCircle, Plus, Trash2, ChevronLeft, Save
 } from 'lucide-react';
-import api, { formatDate, formatMoney } from '../utils/api';
+import api, { formatDate, formatMoney, formatInputNumber, parseInputNumber } from '../utils/api';
 import { useUI } from '../context/UIContext';
 import { useAuth } from '../context/AuthContext';
 import StatusBadge from '../components/ui/StatusBadge';
@@ -24,25 +24,37 @@ export default function ReportDetail() {
     // ── Response Modal ──────────────────────────────────────────
     const [showRespModal, setShowRespModal] = useState(false);
     const [respForm, setRespForm] = useState({
-        departmentCode: '',
+        departmentCode: user?.deptCode || '',
         responseContent: '',
         causeAssessment: '',
         proposedAction: '',
-        hasDeptCost: false
+        hasDeptCost: false,
+        costs: [] // Danh sách chi phí lưu tạm tại client
     });
 
-    // ── Cost Modal ──────────────────────────────────────────────
-    const [showCostModal, setShowCostModal] = useState(false);
+    const openResponseModal = async () => {
+        if (costTypes.length === 0) {
+            try {
+                const res = await api.get('/report-form/master-data');
+                if (res.data.success) setCostTypes(res.data.data.costTypes || []);
+            } catch {
+                showToast('Không tải được danh mục', 'error');
+            }
+        }
+        setRespForm(prev => ({ ...prev, departmentCode: user?.deptCode || '' }));
+        setShowRespModal(true);
+    };
+
     const [costForm, setCostForm] = useState({
-        departmentCode: '',
         costTypeId: '',
         costItemDesc: '',
         qty: '',
         unitCost: '',
         manualAmount: '',
         note: '',
-        useManual: false           // true = nhập thẳng thành tiền; false = qty × unitCost
+        useManual: false
     });
+
 
     // Danh sách CostType (load từ master data khi mở modal)
     const [costTypes, setCostTypes] = useState([]);
@@ -52,7 +64,7 @@ export default function ReportDetail() {
     const [editForm, setEditForm] = useState({});
     const [masterData, setMasterData] = useState(null);
     const [saving, setSaving] = useState(false);
-
+console.log(user)
     const loadMasterData = async () => {
         if (masterData) return;
         try {
@@ -61,7 +73,7 @@ export default function ReportDetail() {
                 setMasterData(res.data.data);
                 setCostTypes(res.data.data.costTypes || []);
             }
-        } catch (err) {
+        } catch {
             showToast('Không tải được danh mục', 'error');
         }
     };
@@ -174,20 +186,78 @@ export default function ReportDetail() {
         }), `Thao tác ${actionName} thành công!`);
     };
 
+    const addCostLine = () => {
+        if (!costForm.costTypeId) return showToast('Vui lòng chọn Loại Chi Phí', 'warning');
+        if (!costForm.costItemDesc) return showToast('Vui lòng nhập Mô tả khoản chi phí', 'warning');
+        if (costForm.useManual && !costForm.manualAmount) return showToast('Vui lòng nhập Thành Tiền', 'warning');
+        if (!costForm.useManual && (!costForm.qty || !costForm.unitCost)) return showToast('Vui lòng nhập Số lượng và Đơn giá', 'warning');
+
+        // Lấy tên loại chi phí từ master data để hiển thị ở client
+        const typeObj = costTypes.find(t => t.CostTypeID == costForm.costTypeId);
+
+        const newLine = {
+            ...costForm,
+            costTypeName: typeObj?.CostTypeName || 'N/A',
+            // Tính toán amount để hiển thị
+            amount: costForm.useManual ? Number(costForm.manualAmount) : (Number(costForm.qty) * Number(costForm.unitCost))
+        };
+
+        setRespForm(prev => ({
+            ...prev,
+            costs: [...prev.costs, newLine]
+        }));
+
+        // Reset form nhập
+        setCostForm({ costTypeId: '', costItemDesc: '', qty: '', unitCost: '', manualAmount: '', note: '', useManual: false });
+    };
+
+    const removeCostLine = (index) => {
+        setRespForm(prev => ({
+            ...prev,
+            costs: prev.costs.filter((_, i) => i !== index)
+        }));
+    };
+
     // ── Ghi phản hồi ────────────────────────────────────────────
     const submitResponse = async () => {
         if (!respForm.departmentCode || !respForm.responseContent)
             return showToast('Vui lòng nhập Mã Bộ Phận và Nội dung xác nhận', 'warning');
+
+        if (respForm.hasDeptCost && respForm.costs.length === 0) {
+            return showToast('Vui lòng thêm ít nhất một dòng chi phí', 'warning');
+        }
+
         try {
             const res = await api.post(`/reports/${id}/responses`, {
-                ...respForm,
+                departmentCode: respForm.departmentCode,
+                responseContent: respForm.responseContent,
+                causeAssessment: respForm.causeAssessment,
+                proposedAction: respForm.proposedAction,
+                hasDeptCost: respForm.hasDeptCost,
                 processingResult: "Đã rà soát",
                 responseStatusCode: "RESPONDED"
             });
+
             if (res.data.success) {
+                // Nếu có chi phí, lưu từng dòng vào database
+                if (respForm.hasDeptCost && respForm.costs.length > 0) {
+                    for (const cost of respForm.costs) {
+                        const costPayload = {
+                            departmentCode: respForm.departmentCode,
+                            costTypeId: Number(cost.costTypeId),
+                            costItemDesc: cost.costItemDesc,
+                            note: cost.note || null,
+                            qty: cost.useManual ? null : Number(cost.qty),
+                            unitCost: cost.useManual ? null : Number(cost.unitCost),
+                            manualAmount: cost.useManual ? Number(cost.manualAmount) : null
+                        };
+                        await api.post(`/reports/${id}/cost-lines`, costPayload);
+                    }
+                }
                 showToast("Ghi phản hồi thành công!", "success");
                 setShowRespModal(false);
-                setRespForm({ departmentCode: '', responseContent: '', causeAssessment: '', proposedAction: '', hasDeptCost: false });
+                setRespForm({ departmentCode: '', responseContent: '', causeAssessment: '', proposedAction: '', hasDeptCost: false, costs: [] });
+                setCostForm({ costTypeId: '', costItemDesc: '', qty: '', unitCost: '', manualAmount: '', note: '', useManual: false });
                 loadDetail();
             }
         } catch (e) {
@@ -195,50 +265,6 @@ export default function ReportDetail() {
         }
     };
 
-    // ── Mở modal chi phí + load costTypes ───────────────────────
-    const openCostModal = async () => {
-        if (costTypes.length === 0) {
-            try {
-                const res = await api.get('/report-form/master-data');
-                if (res.data.success) setCostTypes(res.data.data.costTypes || []);
-            } catch {
-                showToast('Không tải được danh sách loại chi phí, vui lòng thử lại', 'error');
-                return;
-            }
-        }
-        setCostForm({ departmentCode: '', costTypeId: '', costItemDesc: '', qty: '', unitCost: '', manualAmount: '', note: '', useManual: false });
-        setShowCostModal(true);
-    };
-
-    // ── Thêm dòng chi phí ────────────────────────────────────────
-    const submitCostLine = async () => {
-        if (!costForm.departmentCode) return showToast('Vui lòng nhập Mã Bộ Phận', 'warning');
-        if (!costForm.costTypeId) return showToast('Vui lòng chọn Loại Chi Phí', 'warning');
-        if (!costForm.costItemDesc) return showToast('Vui lòng nhập Mô tả khoản chi phí', 'warning');
-        if (costForm.useManual && !costForm.manualAmount) return showToast('Vui lòng nhập Thành Tiền', 'warning');
-        if (!costForm.useManual && (!costForm.qty || !costForm.unitCost)) return showToast('Vui lòng nhập Số lượng và Đơn giá', 'warning');
-
-        const payload = {
-            departmentCode: costForm.departmentCode,
-            costTypeId: Number(costForm.costTypeId),
-            costItemDesc: costForm.costItemDesc,
-            note: costForm.note || null,
-            qty: costForm.useManual ? null : Number(costForm.qty),
-            unitCost: costForm.useManual ? null : Number(costForm.unitCost),
-            manualAmount: costForm.useManual ? Number(costForm.manualAmount) : null
-        };
-
-        try {
-            const res = await api.post(`/reports/${id}/cost-lines`, payload);
-            if (res.data.success) {
-                showToast("Đã thêm dòng chi phí!", "success");
-                setShowCostModal(false);
-                loadDetail();
-            }
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Lỗi thêm dòng chi phí', 'error');
-        }
-    };
     // ── Chỉnh sửa nội dung (Draft) ──────────────────────────────
     const startEditing = async () => {
         await loadMasterData();
@@ -256,6 +282,7 @@ export default function ReportDetail() {
             mainResponsibleEmpCode: r.MainResponsibleEmpCode,
             proposedSolution: r.ProposedSolution,
             hasCost: r.HasCost,
+            dueDate: r.DueDate ? r.DueDate.split('T')[0] : '', // Chuyển định dạng ISO sang YYYY-MM-DD
             coordDepartmentCodesCsv: data.coordDepartments?.map(d => d.DepartmentCode).join(',') || '',
             impactCodesCsv: data.impacts?.map(i => i.ImpactCode).join(',') || ''
         });
@@ -364,15 +391,8 @@ export default function ReportDetail() {
 
                     {/* Ghi Phản Hồi: DEPT_HANDLER khi phiếu WAITING_FEEDBACK & BP mình chưa phản hồi */}
                     {actions?.CanRespond && (
-                        <button onClick={() => setShowRespModal(true)} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200">
+                        <button onClick={openResponseModal} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200">
                             <MessageSquare className="w-4 h-4 mr-2" /> Ghi Phản Hồi
-                        </button>
-                    )}
-
-                    {/* Nhập Chi Phí: COST_HANDLER khi phiếu CÓ CHI PHÍ & đang chờ phản hồi/bổ sung */}
-                    {actions?.CanInputCost && (
-                        <button onClick={openCostModal} className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200">
-                            <DollarSign className="w-4 h-4 mr-2" /> Nhập Chi Phí
                         </button>
                     )}
 
@@ -456,18 +476,27 @@ export default function ReportDetail() {
                                                             rows="2"
                                                         />
                                                     </div>
-                                                    <div className="grid grid-cols-1 gap-4">
-                                                        <div>
-                                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mức độ (*)</label>
-                                                            <select
-                                                                value={editForm.severityCode}
-                                                                onChange={e => setEditForm({ ...editForm, severityCode: e.target.value })}
-                                                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold"
-                                                            >
-                                                                {masterData?.severities.map(s => <option key={s.SeverityCode} value={s.SeverityCode}>{s.SeverityName}</option>)}
-                                                            </select>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mức độ (*)</label>
+                                                                <select
+                                                                    value={editForm.severityCode}
+                                                                    onChange={e => setEditForm({ ...editForm, severityCode: e.target.value })}
+                                                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold"
+                                                                >
+                                                                    {masterData?.severities.map(s => <option key={s.SeverityCode} value={s.SeverityCode}>{s.SeverityName}</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hạn hoàn thành (*)</label>
+                                                                <input
+                                                                    type="date"
+                                                                    value={editForm.dueDate}
+                                                                    onChange={e => setEditForm({ ...editForm, dueDate: e.target.value })}
+                                                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold text-blue-600 focus:bg-white"
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    </div>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
                                                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Loại phát sinh</label>
@@ -574,7 +603,7 @@ export default function ReportDetail() {
                                                                         <input
                                                                             type="checkbox"
                                                                             checked={isChecked}
-                                                                            onChange={e => {
+                                                                            onChange={() => {
                                                                                 let newCodes = isChecked ? codes.filter(c => c !== val) : [...codes, val];
                                                                                 setEditForm({ ...editForm, impactCodesCsv: newCodes.join(',') });
                                                                             }}
@@ -600,8 +629,9 @@ export default function ReportDetail() {
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="grid grid-cols-4 gap-4">
-                                                <Card label="Ngày phát sinh" value={formatDate(r.OccurrenceTime || r.CreatedAt)} icon={Clock} />
+                                            <div className="grid grid-cols-5 gap-4">
+                                                <Card label="Ngày phát sinh" value={formatDate(r.OccurrenceTime || r.CreatedAt, false)} icon={Clock} />
+                                                <Card label="Hạn hoàn thành" value={formatDate(r.DueDate, false)} icon={Clock} />
                                                 <Card label="Mức độ" value={r.SeverityName || r.SeverityCode} icon={AlertTriangle} />
                                                 <Card label="Loại phát sinh" value={r.ExceptionTypeName} icon={ListTree} />
                                                 <Card label="Nguyên nhân" value={r.ExceptionCauseName} icon={HelpCircle} />
@@ -616,8 +646,8 @@ export default function ReportDetail() {
                                                 <div className="space-y-4">
                                                     <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">Phân công</h3>
                                                     <Field label="BP chịu trách nhiệm" value={r.ResponsibleDeptName || r.ResponsibleDeptCode} />
-                                                    <Field label="Người chịu TN chính" value={r.MainResponsibleEmpCode} />
-                                                    <Field label="Mã Kế hoạch ERP" value={r.PlanSelectKey} />
+                                                    <Field label="Người chịu TN chính" value={r.MainResponsibleEmpName} />
+                                                    <Field label="Mã Kế hoạch ERP" value={r.SourcePlanNo} />
                                                 </div>
                                             </div>
                                         </>
@@ -672,11 +702,6 @@ export default function ReportDetail() {
                                 <div className="animate-in fade-in space-y-4">
                                     <div className="flex items-center justify-between border-b pb-2 mb-4">
                                         <h3 className="font-bold text-slate-800 uppercase tracking-wider text-xs">Danh Sách Dòng Chi Phí</h3>
-                                        {actions?.CanInputCost && (
-                                            <button onClick={openCostModal} className="inline-flex items-center text-xs font-bold px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg active:scale-95 transition-all">
-                                                <Plus className="w-3.5 h-3.5 mr-1" /> Thêm dòng
-                                            </button>
-                                        )}
                                     </div>
                                     {costLines.length === 0 ? (
                                         <p className="text-slate-500 italic text-sm">Chưa có dòng chi phí nào.</p>
@@ -753,18 +778,11 @@ export default function ReportDetail() {
                         <div className="space-y-5">
                             <div className="grid grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Bộ Phận (*)</label>
-                                    <SearchSelect
-                                        placeholder="Chọn bộ phận..."
-                                        apiPath="/departments"
-                                        valueField="DepartmentCode"
-                                        labelField="DepartmentName"
-                                        subLabelField="DepartmentCode"
-                                        onSelect={dept => {
-                                            if (showRespModal) setRespForm({ ...respForm, departmentCode: dept?.DepartmentCode || '' });
-                                            if (showCostModal) setCostForm({ ...costForm, departmentCode: dept?.DepartmentCode || '' });
-                                        }}
-                                    />
+                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Bộ Phận Phản Hồi</label>
+                                    <div className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-100 font-bold text-slate-700 flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                        {user?.unitName} ({user?.deptCode})
+                                    </div>
                                 </div>
                                 <div className="flex flex-col justify-end pb-1">
                                     {r.HasCost && (
@@ -792,104 +810,120 @@ export default function ReportDetail() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-8 border-t border-slate-100 pt-6">
-                                <button onClick={() => setShowRespModal(false)} className="px-6 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold transition-colors active:scale-95">Hủy</button>
-                                <button onClick={submitResponse} className="px-6 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold shadow-sm shadow-blue-200 transition-all active:scale-95 flex items-center">
-                                    <Send className="w-4 h-4 mr-2" /> Lưu Phản Hồi
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            {respForm.hasDeptCost && (
+                                <div className="border-t border-slate-100 pt-5 mt-5 space-y-4 animate-in fade-in slide-in-from-top-4">
+                                    <h4 className="text-sm font-bold text-slate-800 flex items-center">
+                                        <DollarSign className="w-4 h-4 mr-1 text-amber-500" />
+                                        Thông Tin Chi Phí Phát Sinh
+                                    </h4>
 
-            {/* ══════════════════════════════════════════════════════════
-                Modal 2 — Nhập Chi Phí
-            ══════════════════════════════════════════════════════════ */}
-            {showCostModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in p-4 overflow-y-auto">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-8 my-auto border border-slate-100">
-                        <h3 className="text-xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4 flex items-center">
-                            <DollarSign className="w-5 h-5 mr-2 text-amber-500" />
-                            Thêm Dòng Chi Phí
-                        </h3>
-                        <div className="space-y-5">
-                            {/* Row 1: BP + Loại chi phí */}
-                            <div className="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Bộ Phận (*)</label>
-                                    <SearchSelect
-                                        placeholder="Chọn bộ phận..."
-                                        apiPath="/departments"
-                                        valueField="DepartmentCode"
-                                        labelField="DepartmentName"
-                                        subLabelField="UnitName"
-                                        onSelect={dept => setCostForm({ ...costForm, departmentCode: dept?.DepartmentCode || '' })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Loại Chi Phí (*)</label>
-                                    {costTypes.length > 0 ? (
-                                        <select value={costForm.costTypeId} onChange={e => setCostForm({ ...costForm, costTypeId: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-medium text-slate-800">
-                                            <option value="">-- Chọn loại --</option>
-                                            {costTypes.map(ct => <option key={ct.CostTypeID} value={ct.CostTypeID}>{ct.CostTypeName}</option>)}
-                                        </select>
-                                    ) : (
-                                        <input type="number" value={costForm.costTypeId} onChange={e => setCostForm({ ...costForm, costTypeId: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-medium text-slate-800" placeholder="Nhập CostTypeID (số)" />
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Row 2: Mô tả */}
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Mô tả Khoản Chi Phí (*)</label>
-                                <input type="text" value={costForm.costItemDesc} onChange={e => setCostForm({ ...costForm, costItemDesc: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-medium text-slate-800" placeholder="VD: Chi phí kiểm tra lại nguyên vật liệu..." />
-                            </div>
-
-                            {/* Toggle: nhập theo qty×unitCost hay manualAmount */}
-                            <div className="flex gap-3">
-                                <button type="button" onClick={() => setCostForm({ ...costForm, useManual: false })} className={cn("flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-colors", !costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50")}>
-                                    SL × Đơn giá
-                                </button>
-                                <button type="button" onClick={() => setCostForm({ ...costForm, useManual: true })} className={cn("flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-colors", costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50")}>
-                                    Nhập thẳng Thành Tiền
-                                </button>
-                            </div>
-
-                            {/* Input theo mode */}
-                            {!costForm.useManual ? (
-                                <div className="grid grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Số Lượng (*)</label>
-                                        <input type="number" min="0" value={costForm.qty} onChange={e => setCostForm({ ...costForm, qty: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-medium text-slate-800" placeholder="0.000" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Đơn Giá (VNĐ) (*)</label>
-                                        <input type="number" min="0" value={costForm.unitCost} onChange={e => setCostForm({ ...costForm, unitCost: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-medium text-slate-800" placeholder="0.00" />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>
-                                    <label className="block text-[11px] font-bold tracking-widest text-red-500 uppercase mb-2">Thành Tiền (VNĐ) (*)</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <DollarSign className="h-5 w-5 text-amber-400" />
+                                    {/* Mảng chi phí đã thêm */}
+                                    {respForm.costs.length > 0 && (
+                                        <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden mb-4">
+                                            <table className="w-full text-xs">
+                                                <thead className="bg-slate-100 text-slate-600 font-bold">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left">Loại / Mô tả</th>
+                                                        <th className="px-3 py-2 text-right">T.Tiền</th>
+                                                        <th className="px-3 py-2 text-center w-10"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-200">
+                                                    {respForm.costs.map((c, idx) => (
+                                                        <tr key={idx} className="hover:bg-amber-50/50">
+                                                            <td className="px-3 py-2">
+                                                                <div className="font-bold text-slate-700">{c.costTypeName}</div>
+                                                                <div className="text-slate-500 truncate max-w-[200px]">{c.costItemDesc}</div>
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right font-black text-slate-800">{formatMoney(c.amount)}</td>
+                                                            <td className="px-3 py-2 text-center">
+                                                                <button onClick={() => removeCostLine(idx)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                        <input type="number" min="0" value={costForm.manualAmount} onChange={e => setCostForm({ ...costForm, manualAmount: e.target.value })} className="w-full pl-11 pr-4 py-3 border border-amber-200 rounded-xl bg-amber-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-bold text-amber-800" placeholder="0.00" />
+                                    )}
+
+                                    {/* Form nhập dòng chi phí mới */}
+                                    <div className="bg-slate-50/50 p-4 rounded-2xl border border-dashed border-slate-300 space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Loại Chi Phí (*)</label>
+                                                <select value={costForm.costTypeId} onChange={e => setCostForm({ ...costForm, costTypeId: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-bold focus:border-amber-500 outline-none">
+                                                    <option value="">-- Chọn loại --</option>
+                                                    {costTypes.map(ct => <option key={ct.CostTypeID} value={ct.CostTypeID}>{ct.CostTypeName}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mô tả Khoản Chi Phí (*)</label>
+                                                <input type="text" value={costForm.costItemDesc} onChange={e => setCostForm({ ...costForm, costItemDesc: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-bold focus:border-amber-500 outline-none" placeholder="VD: Chi phí vật tư..." />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={() => setCostForm({ ...costForm, useManual: false })} className={cn("flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all", !costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500")}>
+                                                SL × Đơn giá
+                                            </button>
+                                            <button type="button" onClick={() => setCostForm({ ...costForm, useManual: true })} className={cn("flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all", costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500")}>
+                                                Nhập tiền trực tiếp
+                                            </button>
+                                        </div>
+
+                                        {!costForm.useManual ? (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Số Lượng</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formatInputNumber(costForm.qty)}
+                                                        onChange={e => setCostForm({ ...costForm, qty: parseInputNumber(e.target.value) })}
+                                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-bold outline-none"
+                                                        placeholder="0"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Đơn Giá</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formatInputNumber(costForm.unitCost)}
+                                                        onChange={e => setCostForm({ ...costForm, unitCost: parseInputNumber(e.target.value) })}
+                                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-sm font-bold outline-none"
+                                                        placeholder="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 text-red-500">Thành Tiền (VNĐ) (*)</label>
+                                                <input
+                                                    type="text"
+                                                    value={formatInputNumber(costForm.manualAmount)}
+                                                    onChange={e => setCostForm({ ...costForm, manualAmount: parseInputNumber(e.target.value) })}
+                                                    className="w-full px-3 py-2 border border-amber-200 bg-amber-50/30 rounded-xl text-sm font-black text-amber-900 outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={addCostLine}
+                                            className="w-full py-2.5 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Plus className="w-4 h-4" /> Thêm Dòng Vào Danh Sách
+                                        </button>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Ghi chú */}
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">Ghi Chú</label>
-                                <input type="text" value={costForm.note} onChange={e => setCostForm({ ...costForm, note: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-amber-500 outline-none transition-all font-medium text-slate-800" placeholder="Ghi chú thêm (nếu có)..." />
-                            </div>
-
                             <div className="flex justify-end gap-3 mt-8 border-t border-slate-100 pt-6">
-                                <button onClick={() => setShowCostModal(false)} className="px-6 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold transition-colors active:scale-95">Hủy</button>
-                                <button onClick={submitCostLine} className="px-6 py-2.5 bg-amber-500 text-white hover:bg-amber-600 rounded-xl font-bold shadow-sm shadow-amber-200 transition-all active:scale-95 flex items-center">
-                                    <Plus className="w-4 h-4 mr-2" /> Thêm Dòng Chi Phí
+                                <button onClick={() => setShowRespModal(false)} className="px-6 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold transition-colors active:scale-95">Hủy</button>
+                                <button onClick={submitResponse} className="px-6 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold shadow-sm shadow-blue-200 transition-all active:scale-95 flex items-center">
+                                    <Send className="w-4 h-4 mr-2" /> Lưu Phản Hồi
                                 </button>
                             </div>
                         </div>

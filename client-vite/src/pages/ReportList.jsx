@@ -128,7 +128,7 @@ export default function ReportList() {
                                             <Link to={`/reports/${r.ReportID}`} className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                                                 {r.ReportNo}
                                             </Link>
-                                            <div className="text-xs text-slate-500 mt-1 font-medium">{formatDate(r.CreatedAt)}</div>
+                                            <div className="text-xs text-slate-500 mt-1 font-medium">{formatDate(r.CreatedAt, false)}</div>
                                         </td>
                                         <td className="p-5">
                                             <div className="font-bold text-slate-700">{r.OrderCode || 'N/A'}</div>

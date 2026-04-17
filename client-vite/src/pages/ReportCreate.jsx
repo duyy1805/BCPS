@@ -32,6 +32,7 @@ export default function ReportCreate() {
         typeId: '',
         causeId: '',
         severityCode: '',
+        dueDate: '', // Hạn hoàn thành
         hasCost: false,
         impactCodes: [],
         coordDeptCodes: []
@@ -122,7 +123,7 @@ export default function ReportCreate() {
                 proposedSolution: form.solution,
                 interimAction: null,
                 expectedResult: null,
-                dueDate: null,
+                dueDate: form.dueDate || null,
                 hasCost: form.hasCost,
                 affectsERP: true,
                 impactCodesCsv: form.impactCodes.join(','),
@@ -291,6 +292,16 @@ export default function ReportCreate() {
                                     subLabelField="DepartmentCode"
                                     initialValue={form.empCode}
                                     onSelect={emp => setForm(prev => ({ ...prev, empCode: emp?.EmployeeCode || '' }))}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Hạn hoàn thành xử lý (*)</label>
+                                <input
+                                    type="date"
+                                    value={form.dueDate}
+                                    onChange={e => setForm({ ...form, dueDate: e.target.value })}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 font-bold text-blue-600"
                                 />
                             </div>
 

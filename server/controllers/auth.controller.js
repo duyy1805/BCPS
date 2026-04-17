@@ -31,7 +31,7 @@ async function login(req, res, next) {
             userName: account.UserName,
             roles: account.roles,
             unitName: account.UnitName || null,
-            departmentCode: account.EmployeeCode // Có thể map lại nếu cần thực tế hơn
+            departmentCode: account.UnitName // Có thể map lại nếu cần thực tế hơn
         };
 
         const token = jwt.sign(payload, env.jwtSecret, { expiresIn: "16h" });
