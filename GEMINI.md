@@ -66,7 +66,7 @@ A lightweight, multi-page application (MPA) structure:
   ```
 - **Environment Setup:**
   Create a `.env` file in the `server` directory based on the following keys found in `config/env.js`:
-  - `PORT`: Server port (default: 5000)
+  - `PORT`: Server port (default: 5002)
   - `JWT_SECRET`: Secret key for JWT signing
   - `DB_USER`, `DB_PASSWORD`, `DB_SERVER`, `DB_DATABASE`, `DB_PORT`: SQL Server credentials
   - `DB_TRUST_CERT`: Set to `true` for local development.
