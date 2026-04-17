@@ -64,6 +64,7 @@ class ReportService {
             hasCost: this.toBoolean(body.hasCost, false),
             affectsERP: this.toBoolean(body.affectsERP, true),
             impactCodesCsv: this.toNullableCsv(body.impactCodesCsv),
+            occurredDeptCode_NT: body.occurredDeptCode_NT || null,
             actionByEmpCode: currentUser.employeeCode
         };
 
@@ -95,17 +96,9 @@ class ReportService {
 
     async getDetail(reportId) {
         const result = await this.repo.getDetail(reportId);
+        if (!result) return ok({ report: null });
 
-        return ok({
-            report: result.recordsets[0]?.[0] || null,
-            impacts: result.recordsets[1] || [],
-            coordDepartments: result.recordsets[2] || [],
-            responses: result.recordsets[3] || [],
-            costLines: result.recordsets[4] || [],
-            approvals: result.recordsets[5] || [],
-            attachments: result.recordsets[6] || [],
-            history: result.recordsets[7] || []
-        });
+        return ok(result);
     }
 
     async getAvailableActions(reportId, currentUser) {

@@ -25,6 +25,12 @@ class ERPService {
         const result = await this.repo.getDepartments(params);
         return ok({ items: result.recordsets[0] || [] });
     }
+
+    async getManagedDepartments(empCode) {
+        const result = await this.repo.getManagedDepartments(empCode);
+        return ok({ items: result.recordset || [] });
+    }
 }
+
 
 module.exports = ERPService;

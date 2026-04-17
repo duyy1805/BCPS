@@ -18,6 +18,8 @@ router.get("/api/me/permissions", authMiddleware, meController.getMyPermissions)
 router.get("/api/report-form/master-data", authMiddleware, masterDataController.getCreateFormMasterData);
 router.get("/api/departments", authMiddleware, masterDataController.searchDepartments);
 router.get("/api/employees/search", authMiddleware, masterDataController.searchEmployees);
+router.get("/api/employees/:empCode/managed-departments", authMiddleware, masterDataController.getEmployeeManagedDepartments);
+
 
 router.use("/api/auth", authRoutes); // Thêm dòng này
 router.get("/api/me/permissions", authMiddleware, meController.getMyPermissions);

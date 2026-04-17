@@ -33,6 +33,14 @@ class ERPRepository extends DbRepository {
             { name: "Keyword", type: sql.NVarChar(200), value: params.keyword || null }
         ]);
     }
+
+    async getManagedDepartments(empCode) {
+        return this.query(
+            "SELECT DepartmentCode_NT AS DepartmentCode, DepartmentName_NT AS DepartmentName FROM erpint.vw_Department_ManagerBy_Employee WHERE EmployeeCode = @empCode",
+            [{ name: "empCode", type: sql.VarChar(50), value: empCode }]
+        );
+    }
 }
+
 
 module.exports = ERPRepository;

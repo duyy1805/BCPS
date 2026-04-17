@@ -38,8 +38,18 @@ async function searchEmployees(req, res, next) {
     }
 }
 
+async function getEmployeeManagedDepartments(req, res, next) {
+    try {
+        const result = await erpService.getManagedDepartments(req.params.empCode);
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+}
+
 module.exports = {
     getCreateFormMasterData,
     searchDepartments,
-    searchEmployees
+    searchEmployees,
+    getEmployeeManagedDepartments
 };

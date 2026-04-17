@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
     Clock, AlertTriangle, ListTree, HelpCircle, Send,
-    MessageSquare, DollarSign, CheckSquare, Archive, CheckCircle, XCircle, Plus, Trash2, ChevronLeft, Save
+    MessageSquare, DollarSign, CheckSquare, Archive, CheckCircle, XCircle, Plus, Trash2, ChevronLeft, Save, Info
 } from 'lucide-react';
 import api, { formatDate, formatMoney, formatInputNumber, parseInputNumber } from '../utils/api';
 import { useUI } from '../context/UIContext';
@@ -58,6 +58,7 @@ export default function ReportDetail() {
 
     // Danh sách CostType (load từ master data khi mở modal)
     const [costTypes, setCostTypes] = useState([]);
+    const [managedDepts, setManagedDepts] = useState([]);
 
     // ── Edit Mode ───────────────────────────────────────────────
     const [isEditing, setIsEditing] = useState(false);
@@ -94,6 +95,7 @@ console.log(user)
             const detailRes = await api.get(`/reports/${id}`);
 
             if (detailRes.data.success) {
+                console.log("chi tiết báo cáo", detailRes.data.data);
                 const reportData = detailRes.data.data;
                 let actionData = {};
 
@@ -284,10 +286,30 @@ console.log(user)
             hasCost: r.HasCost,
             dueDate: r.DueDate ? r.DueDate.split('T')[0] : '', // Chuyển định dạng ISO sang YYYY-MM-DD
             coordDepartmentCodesCsv: data.coordDepartments?.map(d => d.DepartmentCode).join(',') || '',
-            impactCodesCsv: data.impacts?.map(i => i.ImpactCode).join(',') || ''
+            impactCodesCsv: data.impacts?.map(i => i.ImpactCode).join(',') || '',
+            occurredDeptCode_NT: r.OccurredDeptCode_NT || ''
         });
         setIsEditing(true);
     };
+
+    useEffect(() => {
+        if (!isEditing || !editForm.mainResponsibleEmpCode) {
+            setManagedDepts([]);
+            return;
+        }
+
+        const fetchManagedDepts = async () => {
+            try {
+                const { data: res } = await api.get(`/employees/${editForm.mainResponsibleEmpCode}/managed-departments`);
+                if (res.success) {
+                    setManagedDepts(res.data.items);
+                }
+            } catch (err) {
+                console.error("Lỗi lấy danh sách đơn vị quản lý:", err);
+            }
+        };
+        fetchManagedDepts();
+    }, [isEditing, editForm.mainResponsibleEmpCode]);
 
     const saveEdit = async () => {
         setSaving(true);
@@ -571,7 +593,7 @@ console.log(user)
                                                             labelField="EmployeeName"
                                                             initialValue={editForm.mainResponsibleEmpCode}
                                                             initialLabel={data.report.MainResponsibleEmpName}
-                                                            onSelect={emp => setEditForm({ ...editForm, mainResponsibleEmpCode: emp?.EmployeeCode || '' })}
+                                                            onSelect={emp => setEditForm({ ...editForm, mainResponsibleEmpCode: emp?.EmployeeCode || '', occurredDeptCode_NT: '' })}
                                                         />
                                                     </div>
                                                     <div>
@@ -583,6 +605,23 @@ console.log(user)
                                                             rows="4"
                                                         />
                                                     </div>
+                                                    {managedDepts.length > 0 && (
+                                                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Đơn vị gây phát sinh (nếu có)</label>
+                                                            <select 
+                                                                value={editForm.occurredDeptCode_NT} 
+                                                                onChange={e => setEditForm({ ...editForm, occurredDeptCode_NT: e.target.value })}
+                                                                className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg outline-none text-xs font-bold text-slate-700"
+                                                            >
+                                                                <option value="">-- Không có / Khác --</option>
+                                                                {managedDepts.map(d => (
+                                                                    <option key={d.DepartmentCode} value={d.DepartmentCode}>
+                                                                        {d.DepartmentName}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    )}
                                                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-3">Thông báo phản hồi tới</label>
                                                         <div className="flex flex-wrap gap-2 mb-3">
@@ -661,11 +700,17 @@ console.log(user)
                                                     <Field label="Mô tả ngắn" value={r.ShortDescription} />
                                                     <Field label="Mô tả chi tiết" value={r.DetailedDescription} />
                                                     <Field label="Đề xuất xử lý" value={r.ProposedSolution} />
+                                                    {r.OccurredDeptCode_NT && (
+                                                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 w-fit">
+                                                            <Info className="w-3 h-3" />
+                                                            <span>Đơn vị gây phát sinh: <b className="text-slate-700">{r.OccurredDeptName_NT || r.OccurredDeptCode_NT}</b></span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="space-y-4">
                                                     <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">Phân công</h3>
-                                                    <Field label="BP chịu trách nhiệm" value={r.ResponsibleDeptName || r.ResponsibleDeptCode} />
-                                                    <Field label="Người chịu TN chính" value={r.MainResponsibleEmpName} />
+                                                    <Field label="Đơn vị chịu trách nhiệm" value={r.ResponsibleDeptName || r.ResponsibleDeptCode} />
+                                                    <Field label="Nhân viên phụ trách" value={r.MainResponsibleEmpName} />
                                                     <Field label="Mã Kế hoạch ERP" value={r.SourcePlanNo} />
                                                 </div>
                                             </div>

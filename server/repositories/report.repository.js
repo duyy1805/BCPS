@@ -32,8 +32,9 @@ class ReportRepository extends DbRepository {
             { name: "HasCost", type: sql.Bit, value: nv(params.hasCost) },
             { name: "AffectsERP", type: sql.Bit, value: nv(params.affectsERP) },
             { name: "ImpactCodesCsv", type: sql.NVarChar(500), value: nv(params.impactCodesCsv) },
-            { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: nv(params.coordDepartmentCodesCsv) },
-            { name: "ActionByEmpCode", type: sql.VarChar(50), value: nv(params.actionByEmpCode) }
+            { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: params.coordDepartmentCodesCsv || null },
+            { name: "OccurredDeptCode_NT", type: sql.NVarChar(50), value: params.occurredDeptCode_NT || null },
+            { name: "ActionByEmpCode", type: sql.VarChar(50), value: params.actionByEmpCode }
         ]);
     }
 
@@ -44,10 +45,36 @@ class ReportRepository extends DbRepository {
         ]);
     }
 
-    async getDetail(reportId) {
-        return this.executeStoredProcedure("ps.usp_Report_GetDetail", [
-            { name: "ReportID", type: sql.BigInt, value: reportId }
+    async getDetail(id) {
+        const result = await this.executeStoredProcedure("ps.usp_Report_GetDetail", [
+            { name: "ReportID", type: sql.BigInt, value: id }
         ]);
+
+        if (!result.recordsets[0].length) return null;
+
+        const report = result.recordsets[0][0];
+        const impacts = result.recordsets[1];
+        const coordDepts = result.recordsets[2];
+        const responses = result.recordsets[3];
+        const costLines = result.recordsets[4];
+        const approvals = result.recordsets[5];
+        const attachments = result.recordsets[6];
+        const history = result.recordsets[7];
+
+        return {
+            report: {
+                ...report,
+                occurredDeptCode_NT: report.OccurredDeptCode_NT,
+                occurredDeptName_NT: report.OccurredDeptName_NT,
+            },
+            impacts: impacts.map(i => i.ImpactCode),
+            coordDepartments: coordDepts,
+            responses,
+            costLines,
+            approvals,
+            attachments,
+            history
+        };
     }
 
     async getAvailableActions(reportId, empCode) {

@@ -24,6 +24,18 @@ class DbRepository {
             output: result.output || {}
         };
     }
+
+    async query(sqlText, params = []) {
+        const pool = await getDbPool();
+        const request = pool.request();
+
+        for (const param of params) {
+            request.input(param.name, param.type, param.value);
+        }
+
+        return request.query(sqlText);
+    }
+
 }
 
 module.exports = DbRepository;

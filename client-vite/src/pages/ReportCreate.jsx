@@ -25,12 +25,14 @@ export default function ReportCreate() {
     const [erpPlans, setErpPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [file, setFile] = useState(null);
+    const [managedDepts, setManagedDepts] = useState([]);
 
     const [form, setForm] = useState({
         shortDesc: '',
         solution: '',
         deptCode: '',
         empCode: '',
+        occurredDeptCode_NT: '',
         typeId: '',
         causeId: '',
         severityCode: '',
@@ -78,6 +80,29 @@ export default function ReportCreate() {
         loadMasterData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        if (!form.empCode) {
+            setManagedDepts([]);
+            setForm(prev => ({ ...prev, occurredDeptCode_NT: '' }));
+            return;
+        }
+        const fetchManagedDepts = async () => {
+            try {
+                const { data } = await api.get(`/employees/${form.empCode}/managed-departments`);
+                if (data.success) {
+                    setManagedDepts(data.data.items);
+                    // Reset if no managed depts
+                    if (data.data.items.length === 0) {
+                        setForm(prev => ({ ...prev, occurredDeptCode_NT: '' }));
+                    }
+                }
+            } catch (err) {
+                console.error("Lỗi lấy danh sách đơn vị quản lý:", err);
+            }
+        };
+        fetchManagedDepts();
+    }, [form.empCode]);
 
     const searchERP = async () => {
         if (!erpSearch.trim()) return showToast('Vui lòng nhập từ khóa ERP', 'warning');
@@ -164,7 +189,8 @@ export default function ReportCreate() {
                 hasCost: form.hasCost,
                 affectsERP: true,
                 impactCodesCsv: form.impactCodes.join(','),
-                coordDepartmentCodesCsv: form.coordDeptCodes.join(',')
+                coordDepartmentCodesCsv: form.coordDeptCodes.join(','),
+                occurredDeptCode_NT: form.occurredDeptCode_NT || null
             };
 
             const res = await api.post('/reports/draft', body);
@@ -327,7 +353,7 @@ export default function ReportCreate() {
 
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Bộ phận chịu trách nhiệm chính</label>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Đơn vị chịu trách nhiệm</label>
                                 <SearchSelect
                                     placeholder="Tìm bộ phận..."
                                     apiPath="/departments"
@@ -338,7 +364,7 @@ export default function ReportCreate() {
                                     onSelect={dept => setForm(prev => ({ ...prev, deptCode: dept?.DepartmentCode || '', empCode: '' }))}
                                     className="mb-3"
                                 />
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Người chịu trách nhiệm chính</label>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Nhân viên phụ trách</label>
                                 <SearchSelect
                                     placeholder="Tìm nhân viên..."
                                     apiPath={`/employees/search${form.deptCode ? `?departmentCode=${form.deptCode}` : ''}`}
@@ -349,6 +375,26 @@ export default function ReportCreate() {
                                     onSelect={emp => setForm(prev => ({ ...prev, empCode: emp?.EmployeeCode || '' }))}
                                 />
                             </div>
+
+                            {managedDepts.length > 0 && (
+                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl animate-in fade-in duration-300">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                                        <Info className="w-3 h-3" /> Đơn vị gây phát sinh (nếu có)
+                                    </label>
+                                    <select 
+                                        value={form.occurredDeptCode_NT} 
+                                        onChange={e => setForm({ ...form, occurredDeptCode_NT: e.target.value })}
+                                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg outline-none text-xs font-bold text-slate-700"
+                                    >
+                                        <option value="">-- Không có / Khác --</option>
+                                        {managedDepts.map(d => (
+                                            <option key={d.DepartmentCode} value={d.DepartmentCode}>
+                                                {d.DepartmentName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-2">Hạn hoàn thành xử lý (*)</label>
