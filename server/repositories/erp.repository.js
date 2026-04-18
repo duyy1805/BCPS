@@ -34,11 +34,16 @@ class ERPRepository extends DbRepository {
         ]);
     }
 
-    async getManagedDepartments(empCode) {
-        return this.query(
-            "SELECT DepartmentCode_NT AS DepartmentCode, DepartmentName_NT AS DepartmentName FROM erpint.vw_Department_ManagerBy_Employee WHERE EmployeeCode = @empCode",
-            [{ name: "empCode", type: sql.VarChar(50), value: empCode }]
-        );
+    async getManagedDepartments(empCode, keyword = null) {
+        let sqlQuery = "SELECT DepartmentCode_NT AS DepartmentCode, DepartmentName_NT AS DepartmentName FROM erpint.vw_Department_ManagerBy_Employee WHERE EmployeeCode = @empCode";
+        const params = [{ name: "empCode", type: sql.VarChar(50), value: empCode }];
+
+        if (keyword) {
+            sqlQuery += " AND (DepartmentCode_NT LIKE @keyword OR DepartmentName_NT LIKE @keyword)";
+            params.push({ name: "keyword", type: sql.NVarChar(200), value: `%${keyword}%` });
+        }
+
+        return this.query(sqlQuery, params);
     }
 }
 

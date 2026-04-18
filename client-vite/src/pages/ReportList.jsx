@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus, Filter, Eye } from 'lucide-react';
-import api, { formatMoney, formatDate } from '../utils/api';
-import StatusBadge from '../components/ui/StatusBadge';
-import { useUI } from '../context/UIContext';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, Plus, Filter, Eye } from "lucide-react";
+import api, { formatMoney, formatDate } from "../utils/api";
+import StatusBadge from "../components/ui/StatusBadge";
+import { useUI } from "../context/UIContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function ReportList() {
     const { showToast } = useUI();
     const { user } = useAuth();
-    const [keyword, setKeyword] = useState('');
-    const [status, setStatus] = useState('');
+    const [keyword, setKeyword] = useState("");
+    const [status, setStatus] = useState("");
     const [onlyMyPending, setOnlyMyPending] = useState(true);
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,17 +19,19 @@ export default function ReportList() {
         setLoading(true);
         try {
             const roles = user?.roles || [];
-            const isManagerOrBGD = roles.includes('VT_MANAGER') || roles.includes('BGD');
-            const onlyPending = (isManagerOrBGD && onlyMyPending) ? '&onlyNeedMyApproval=true' : '';
+            const isManagerOrBGD =
+                roles.includes("VT_MANAGER") || roles.includes("BGD");
+            const onlyPending =
+                isManagerOrBGD && onlyMyPending ? "&onlyNeedMyApproval=true" : "";
 
             const query = `?pageNumber=1&pageSize=50&keyword=${encodeURIComponent(keyword)}&statusCode=${status}${onlyPending}`;
             const { data } = await api.get(`/reports${query}`);
-            console.log(data)
+            console.log(data);
             if (data.success) {
                 setReports(data.data.items || []);
             }
         } catch {
-            showToast('Lỗi tải danh sách báo cáo', 'error');
+            showToast("Lỗi tải danh sách báo cáo", "error");
         } finally {
             setLoading(false);
         }
@@ -49,7 +51,10 @@ export default function ReportList() {
         <div className="max-w-8xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Toolbar */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-4">
-                <form onSubmit={handleSearch} className="flex-1 flex items-center gap-4">
+                <form
+                    onSubmit={handleSearch}
+                    className="flex-1 flex items-center gap-4"
+                >
                     <div className="relative flex-1 max-w-lg">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Search className="h-5 w-5 text-slate-400" />
@@ -57,7 +62,7 @@ export default function ReportList() {
                         <input
                             type="text"
                             value={keyword}
-                            onChange={e => setKeyword(e.target.value)}
+                            onChange={(e) => setKeyword(e.target.value)}
                             placeholder="Tiềm kiếm theo số BCPS, Lệnh SX, Mã hàng..."
                             className="block w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
                         />
@@ -68,7 +73,7 @@ export default function ReportList() {
                         </div>
                         <select
                             value={status}
-                            onChange={e => setStatus(e.target.value)}
+                            onChange={(e) => setStatus(e.target.value)}
                             className="block w-48 pl-10 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium appearance-none"
                         >
                             <option value="">Tất cả trạng thái</option>
@@ -81,24 +86,33 @@ export default function ReportList() {
                         </select>
                     </div>
 
-                    {(user?.roles?.includes('VT_MANAGER') || user?.roles?.includes('BGD')) && (
-                        <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-white transition-all shadow-sm">
-                            <input
-                                type="checkbox"
-                                checked={onlyMyPending}
-                                onChange={e => setOnlyMyPending(e.target.checked)}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-bold text-slate-700 select-none whitespace-nowrap">Chờ tôi duyệt</span>
-                        </label>
-                    )}
+                    {(user?.roles?.includes("VT_MANAGER") ||
+                        user?.roles?.includes("BGD")) && (
+                            <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-white transition-all shadow-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={onlyMyPending}
+                                    onChange={(e) => setOnlyMyPending(e.target.checked)}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-sm font-bold text-slate-700 select-none whitespace-nowrap">
+                                    Chờ tôi duyệt
+                                </span>
+                            </label>
+                        )}
 
-                    <button type="submit" className="bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-slate-900 transition-colors shadow-sm active:scale-95">
+                    <button
+                        type="submit"
+                        className="bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-slate-900 transition-colors shadow-sm active:scale-95"
+                    >
                         Tìm kiếm
                     </button>
                 </form>
 
-                <Link to="/reports/create" className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 shadow-sm shadow-blue-200 flex items-center transition-all active:scale-95">
+                <Link
+                    to="/reports/create"
+                    className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 shadow-sm shadow-blue-200 flex items-center transition-all active:scale-95"
+                >
                     <Plus className="w-5 h-5 mr-2" /> Tạo báo cáo
                 </Link>
             </div>
@@ -110,29 +124,56 @@ export default function ReportList() {
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                             <tr>
                                 <th className="p-5 font-bold tracking-wide">Mã BCPS / Ngày</th>
-                                <th className="p-5 font-bold tracking-wide">Lệnh SX / Mã hàng</th>
+                                <th className="p-5 font-bold tracking-wide">
+                                    Lệnh SX / Mã hàng
+                                </th>
                                 <th className="p-5 font-bold tracking-wide">Loại phát sinh</th>
                                 <th className="p-5 font-bold tracking-wide">Bộ phận chịu TN</th>
-                                <th className="p-5 text-right font-bold tracking-wide">Tổng CP (VNĐ)</th>
-                                <th className="p-5 text-center font-bold tracking-wide">Trạng thái</th>
-                                <th className="p-5 text-center font-bold tracking-wide">Thao tác</th>
+                                <th className="p-5 text-right font-bold tracking-wide">
+                                    Tổng CP (VNĐ)
+                                </th>
+                                <th className="p-5 text-center font-bold tracking-wide">
+                                    Trạng thái
+                                </th>
+                                <th className="p-5 text-center font-bold tracking-wide">
+                                    Thao tác
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan="7" className="p-12 text-center text-slate-500 font-medium">Đang tải danh sách báo cáo...</td></tr>
+                                <tr>
+                                    <td
+                                        colSpan="7"
+                                        className="p-12 text-center text-slate-500 font-medium"
+                                    >
+                                        Đang tải danh sách báo cáo...
+                                    </td>
+                                </tr>
                             ) : reports.length > 0 ? (
-                                reports.map(r => (
-                                    <tr key={r.ReportID} className="hover:bg-slate-50/80 transition-colors group">
+                                reports.map((r) => (
+                                    <tr
+                                        key={r.ReportID}
+                                        className="hover:bg-slate-50/80 transition-colors group"
+                                    >
                                         <td className="p-5">
-                                            <Link to={`/reports/${r.ReportID}`} className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                                            <Link
+                                                to={`/reports/${r.ReportID}`}
+                                                className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors"
+                                            >
                                                 {r.ReportNo}
                                             </Link>
-                                            <div className="text-xs text-slate-500 mt-1 font-medium">{formatDate(r.CreatedAt, false)}</div>
+                                            <div className="text-xs text-slate-500 mt-1 font-medium">
+                                                {formatDate(r.CreatedAt, false)}
+                                            </div>
                                         </td>
                                         <td className="p-5">
-                                            <div className="font-bold text-slate-700">{r.OrderCode || 'N/A'}</div>
-                                            <div className="text-sm text-slate-500 mt-1 truncate max-w-[200px]">{r.ProductName || ''}</div>
+                                            <div className="font-bold text-slate-700">
+                                                {r.OrderCode || "N/A"}
+                                            </div>
+                                            <div className="text-sm text-slate-500 mt-1 truncate max-w-[200px]">
+                                                {r.ProductName || ""}
+                                            </div>
                                         </td>
                                         <td className="p-5 font-medium text-slate-700">
                                             {r.ExceptionTypeName}
@@ -141,20 +182,33 @@ export default function ReportList() {
                                             {r.ResponsibleDeptName || r.ResponsibleDeptCode}
                                         </td>
                                         <td className="p-5 text-right font-bold text-red-600">
-                                            {r.HasCost ? formatMoney(r.EstimatedTotalCost) : '-'}
+                                            {r.HasCost ? formatMoney(r.EstimatedTotalCost) : "-"}
                                         </td>
                                         <td className="p-5 text-center whitespace-nowrap">
-                                            <StatusBadge status={r.StatusCode} text={r.DynamicCurrentStep} />
+                                            <StatusBadge
+                                                status={r.StatusCode}
+                                                text={r.DynamicCurrentStep}
+                                            />
                                         </td>
                                         <td className="p-5 text-center">
-                                            <Link to={`/reports/${r.ReportID}`} className="inline-flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                            <Link
+                                                to={`/reports/${r.ReportID}`}
+                                                className="inline-flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            >
                                                 <Eye className="w-5 h-5" />
                                             </Link>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="7" className="p-12 text-center text-slate-500 font-medium tracking-wide">Không tìm thấy báo cáo nào phù hợp.</td></tr>
+                                <tr>
+                                    <td
+                                        colSpan="7"
+                                        className="p-12 text-center text-slate-500 font-medium tracking-wide"
+                                    >
+                                        Không tìm thấy báo cáo nào phù hợp.
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
                     </table>

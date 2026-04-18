@@ -176,12 +176,14 @@ class ReportService {
     async addAttachment(reportId, file, body, currentUser) {
         const ext = path.extname(file.originalname || "").replace(".", "") || null;
 
+        const relativePath = `uploads/${file.filename}`;
+
         await this.repo.addAttachment({
             reportId,
             attachmentScope: body.attachmentScope || "REPORT",
             refId: body.refId ? Number(body.refId) : null,
             fileName: file.originalname,
-            filePath: file.path,
+            filePath: relativePath,
             fileExt: ext,
             mimeType: file.mimetype,
             fileSize: file.size,
@@ -192,7 +194,7 @@ class ReportService {
         return ok(
             {
                 fileName: file.originalname,
-                filePath: file.path
+                filePath: relativePath
             },
             "Tải tệp thành công."
         );

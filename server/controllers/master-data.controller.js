@@ -40,7 +40,7 @@ async function searchEmployees(req, res, next) {
 
 async function getEmployeeManagedDepartments(req, res, next) {
     try {
-        const result = await erpService.getManagedDepartments(req.params.empCode);
+        const result = await erpService.getManagedDepartments(req.params.empCode, req.query.keyword);
         res.json(result);
     } catch (err) {
         next(err);

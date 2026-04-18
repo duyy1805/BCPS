@@ -1,7 +1,7 @@
 node_modules
 
 server/.env
-
+client-vite/.env
 # Build output
 dist/
 build/

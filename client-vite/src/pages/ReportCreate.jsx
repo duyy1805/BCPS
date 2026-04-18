@@ -239,7 +239,7 @@ export default function ReportCreate() {
     if (loading) return <div className="p-8 text-center text-slate-500">Đang tải...</div>;
 
     return (
-        <div className="max-w-8xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-8xl mx-auto space-y-6 ">
             {/* Header Actions */}
             <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <h1 className="text-xl font-bold text-slate-800 flex items-center">
@@ -261,7 +261,7 @@ export default function ReportCreate() {
                 <div className="col-span-2 space-y-6">
                     {/* ERP Search */}
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">1. Chọn kế hoạch ERP gốc</h3>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">1. Chọn kế hoạch</h3>
                         <div className="flex gap-3 mb-4">
                             <input
                                 type="text"
@@ -381,18 +381,16 @@ export default function ReportCreate() {
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
                                         <Info className="w-3 h-3" /> Đơn vị gây phát sinh (nếu có)
                                     </label>
-                                    <select 
-                                        value={form.occurredDeptCode_NT} 
-                                        onChange={e => setForm({ ...form, occurredDeptCode_NT: e.target.value })}
-                                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg outline-none text-xs font-bold text-slate-700"
-                                    >
-                                        <option value="">-- Không có / Khác --</option>
-                                        {managedDepts.map(d => (
-                                            <option key={d.DepartmentCode} value={d.DepartmentCode}>
-                                                {d.DepartmentName}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <SearchSelect
+                                        placeholder="-- Không có / Khác --"
+                                        apiPath={`/employees/${form.empCode}/managed-departments`}
+                                        valueField="DepartmentCode"
+                                        labelField="DepartmentName"
+                                        // subLabelField="DepartmentCode"
+                                        initialValue={form.occurredDeptCode_NT}
+                                        initialLabel={managedDepts.find(d => d.DepartmentCode === form.occurredDeptCode_NT)?.DepartmentName || ""}
+                                        onSelect={dept => setForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentCode || '' }))}
+                                    />
                                 </div>
                             )}
 
@@ -438,9 +436,9 @@ export default function ReportCreate() {
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <label className="flex items-start gap-4 cursor-pointer group p-2">
                             <div className="relative flex items-center mt-1">
-                                <input 
-                                    type="checkbox" 
-                                    checked={form.hasCost} 
+                                <input
+                                    type="checkbox"
+                                    checked={form.hasCost}
                                     onChange={e => {
                                         const checked = e.target.checked;
                                         if (!checked && form.costs.length > 0) {
@@ -456,8 +454,8 @@ export default function ReportCreate() {
                                         } else {
                                             setForm({ ...form, hasCost: checked });
                                         }
-                                    }} 
-                                    className="sr-only" 
+                                    }}
+                                    className="sr-only"
                                 />
                                 <div className={cn("block w-10 h-6 rounded-full transition-colors", form.hasCost ? "bg-blue-500" : "bg-slate-300")}></div>
                                 <div className={cn("absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform", form.hasCost ? "translate-x-4" : "")}></div>
@@ -498,9 +496,9 @@ export default function ReportCreate() {
                                                         </td>
                                                         <td className="px-4 py-2 text-right font-black text-slate-800">{formatMoney(c.amount)}</td>
                                                         <td className="px-4 py-2 text-center">
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => removeCostLine(idx)} 
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeCostLine(idx)}
                                                                 className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
@@ -544,7 +542,7 @@ export default function ReportCreate() {
                                             SL × Đơn giá
                                         </button>
                                         <button type="button" onClick={() => setCostForm({ ...costForm, useManual: true })} className={cn("flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all", costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500")}>
-                                            Nhập tiền trực tiếp
+                                            Thành tiền
                                         </button>
                                     </div>
 
@@ -604,7 +602,7 @@ export default function ReportCreate() {
                 </div>
             </div>
 
-            <ConfirmModal 
+            <ConfirmModal
                 isOpen={confirmModal.open}
                 title={confirmModal.title}
                 message={confirmModal.message}

@@ -26,8 +26,8 @@ class ERPService {
         return ok({ items: result.recordsets[0] || [] });
     }
 
-    async getManagedDepartments(empCode) {
-        const result = await this.repo.getManagedDepartments(empCode);
+    async getManagedDepartments(empCode, keyword) {
+        const result = await this.repo.getManagedDepartments(empCode, keyword);
         return ok({ items: result.recordset || [] });
     }
 }
