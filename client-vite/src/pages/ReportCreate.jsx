@@ -384,12 +384,12 @@ export default function ReportCreate() {
                                     <SearchSelect
                                         placeholder="-- Không có / Khác --"
                                         apiPath={`/employees/${form.empCode}/managed-departments`}
-                                        valueField="DepartmentCode"
+                                        valueField="DepartmentName"
                                         labelField="DepartmentName"
                                         // subLabelField="DepartmentCode"
                                         initialValue={form.occurredDeptCode_NT}
-                                        initialLabel={managedDepts.find(d => d.DepartmentCode === form.occurredDeptCode_NT)?.DepartmentName || ""}
-                                        onSelect={dept => setForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentCode || '' }))}
+                                        initialLabel={form.occurredDeptCode_NT}
+                                        onSelect={dept => setForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentName || '' }))}
                                     />
                                 </div>
                             )}
