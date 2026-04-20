@@ -19,6 +19,7 @@ import {
     Info,
     Paperclip,
     Download,
+    Eye,
 } from "lucide-react";
 import api, {
     formatDate,
@@ -52,6 +53,8 @@ export default function ReportDetail() {
         hasDeptCost: false,
         costs: [], // Danh sách chi phí lưu tạm tại client
     });
+
+    const [previewFile, setPreviewFile] = useState(null);
 
     const openResponseModal = async () => {
         if (costTypes.length === 0) {
@@ -158,7 +161,6 @@ export default function ReportDetail() {
                         return;
                     }
                 }
-
                 setData(reportData);
                 setActions(actionData);
             } else {
@@ -462,10 +464,10 @@ export default function ReportDetail() {
         );
 
     const r = data.report;
-    console.log(r);
     const history = data.history || [];
     const costLines = data.costLines || [];
-
+    const impacts = data.impacts || [];
+    console.log(impacts);
     // Tính tổng chi phí ước tính từ costLines (Amount = Computed)
     const totalCost = costLines.reduce((s, c) => s + (Number(c.Amount) || 0), 0);
 
@@ -653,10 +655,10 @@ export default function ReportDetail() {
                                     {tab === "overview"
                                         ? "Tổng Quan"
                                         : tab === "responses"
-                                            ? "Phản Hồi"
+                                            ? `Phản Hồi${data?.responses?.length > 0 ? ` (${data.responses.length})` : ""}`
                                             : tab === "costs"
                                                 ? `Chi Phí${costLines.length > 0 ? ` (${costLines.length})` : ""}`
-                                                : "Đính Kèm"}
+                                                : `Đính Kèm${data?.attachments?.length > 0 ? ` (${data.attachments.length})` : ""}`}
                                 </button>
                             ))}
                         </div>
@@ -793,6 +795,45 @@ export default function ReportDetail() {
                                                             rows="4"
                                                         />
                                                     </div>
+                                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-3">
+                                                            Mức độ ảnh hưởng
+                                                        </label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {masterData?.impactTypes.map((imp) => {
+                                                                const val =
+                                                                    imp.ImpactCode || imp.Code || imp.Value;
+                                                                const label =
+                                                                    imp.ImpactName || imp.ImpactTypeName || val;
+                                                                const codes = editForm.impactCodesCsv
+                                                                    ? editForm.impactCodesCsv.split(",")
+                                                                    : [];
+                                                                const isChecked = codes.includes(val);
+                                                                return (
+                                                                    <label
+                                                                        key={val}
+                                                                        className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"
+                                                                    >
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isChecked}
+                                                                            onChange={() => {
+                                                                                let newCodes = isChecked
+                                                                                    ? codes.filter((c) => c !== val)
+                                                                                    : [...codes, val];
+                                                                                setEditForm({
+                                                                                    ...editForm,
+                                                                                    impactCodesCsv: newCodes.join(","),
+                                                                                });
+                                                                            }}
+                                                                            className="w-4 h-4 rounded border-slate-300 text-blue-600"
+                                                                        />
+                                                                        <span className="font-medium">{label}</span>
+                                                                    </label>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div className="space-y-4">
@@ -923,45 +964,7 @@ export default function ReportDetail() {
                                                             }}
                                                         />
                                                     </div>
-                                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-3">
-                                                            Mức độ ảnh hưởng
-                                                        </label>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            {masterData?.impactTypes.map((imp) => {
-                                                                const val =
-                                                                    imp.ImpactCode || imp.Code || imp.Value;
-                                                                const label =
-                                                                    imp.ImpactName || imp.ImpactTypeName || val;
-                                                                const codes = editForm.impactCodesCsv
-                                                                    ? editForm.impactCodesCsv.split(",")
-                                                                    : [];
-                                                                const isChecked = codes.includes(val);
-                                                                return (
-                                                                    <label
-                                                                        key={val}
-                                                                        className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"
-                                                                    >
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={isChecked}
-                                                                            onChange={() => {
-                                                                                let newCodes = isChecked
-                                                                                    ? codes.filter((c) => c !== val)
-                                                                                    : [...codes, val];
-                                                                                setEditForm({
-                                                                                    ...editForm,
-                                                                                    impactCodesCsv: newCodes.join(","),
-                                                                                });
-                                                                            }}
-                                                                            className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                                                                        />
-                                                                        <span className="font-medium">{label}</span>
-                                                                    </label>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
+
                                                     <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
                                                         <input
                                                             type="checkbox"
@@ -1025,6 +1028,10 @@ export default function ReportDetail() {
                                                         label="Đề xuất xử lý"
                                                         value={r.ProposedSolution}
                                                     />
+                                                    <Field
+                                                        label="Mức độ ảnh hưởng"
+                                                        value={impacts?.map(i => i.ImpactName || i.ImpactCode).join(", ")}
+                                                    />
                                                     {r.OccurredDeptCode_NT && (
                                                         <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 w-fit">
                                                             <Info className="w-3 h-3" />
@@ -1056,6 +1063,45 @@ export default function ReportDetail() {
                                                         label="Mã Kế hoạch ERP"
                                                         value={r.SourcePlanNo}
                                                     />
+
+                                                    {/* Hiển thị chi phí của đơn vị tạo (nếu có) */}
+                                                    {r.HasCost && data.costLines?.some(c => c.DepartmentCode === r.CreatedByDeptCode || c.DepartmentCode === r.ResponsibleDeptCode && !data.responses?.some(resp => resp.DepartmentCode === c.DepartmentCode)) && (
+                                                        <div className="mt-4 pt-4 border-t border-slate-100 animate-in fade-in slide-in-from-top-2">
+                                                            <h3 className="font-bold text-slate-800 uppercase text-[10px] tracking-widest mb-3 flex items-center gap-2">
+                                                                <DollarSign className="w-4 h-4 text-orange-500" />
+                                                                Chi phí dự kiến của đơn vị
+                                                            </h3>
+                                                            <div className="bg-orange-50/30 rounded-xl border border-orange-100 overflow-hidden shadow-sm">
+                                                                <table className="w-full text-xs">
+                                                                    <thead className="bg-orange-50 text-orange-700/60 font-bold border-b border-orange-100">
+                                                                        <tr>
+                                                                            <th className="px-3 py-2 text-left">Nội dung</th>
+                                                                            <th className="px-3 py-2 text-right">T.Tiền</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-orange-100 text-slate-700">
+                                                                        {(data.costLines || [])
+                                                                            .filter(c => {
+                                                                                // Lọc lấy chi phí của người tạo (Thường là ResponsibleDeptCode ban đầu nếu chưa có response)
+                                                                                // Hoặc lọc theo CreatedByDeptCode nếu có
+                                                                                const creatorDept = r.CreatedByDeptCode || r.ResponsibleDeptCode;
+                                                                                return c.DepartmentCode === creatorDept && !data.responses?.some(resp => resp.DepartmentCode === c.DepartmentCode);
+                                                                            })
+                                                                            .map((c, ki) => (
+                                                                                <tr key={ki}>
+                                                                                    <td className="px-3 py-2 italic font-medium">
+                                                                                        {c.CostTypeName}: {c.CostItemDesc}
+                                                                                    </td>
+                                                                                    <td className="px-3 py-2 text-right font-black text-slate-900">
+                                                                                        {formatMoney(c.Amount)}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </>
@@ -1137,6 +1183,44 @@ export default function ReportDetail() {
                                                                 </p>
                                                             </div>
                                                         </div>
+
+                                                        {/* Hiển thị chi tiết chi phí của bộ phận này nếu có */}
+                                                        {resp.HasDeptCost && (
+                                                            <div className="mt-4 border-t border-slate-100 pt-4 space-y-3">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="font-bold text-red-600 text-[10px] tracking-widest uppercase flex items-center gap-1">
+                                                                        <DollarSign className="w-3 h-3" />
+                                                                        Chi tiết chi phí phát sinh
+                                                                    </span>
+                                                                    <span className="text-xs font-black text-slate-800">
+                                                                        Tổng: {formatMoney(data.costLines?.filter(c => c.DepartmentCode === resp.DepartmentCode).reduce((s, c) => s + (Number(c.Amount) || 0), 0))}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+                                                                    <table className="w-full text-[11px]">
+                                                                        <thead className="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                                                                            <tr>
+                                                                                <th className="px-3 py-1.5 text-left">Mô tả</th>
+                                                                                <th className="px-3 py-1.5 text-right">T.Tiền</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-slate-50 text-slate-600">
+                                                                            {data.costLines?.filter(c => c.DepartmentCode === resp.DepartmentCode).map((c, ki) => (
+                                                                                <tr key={ki}>
+                                                                                    <td className="px-3 py-2">
+                                                                                        <div className="font-bold text-slate-700">{c.CostTypeName}</div>
+                                                                                        <div className="text-[10px]">{c.CostItemDesc}</div>
+                                                                                    </td>
+                                                                                    <td className="px-3 py-2 text-right font-bold text-slate-800">
+                                                                                        {formatMoney(c.Amount)}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
@@ -1274,16 +1358,27 @@ export default function ReportDetail() {
                                                                 Bởi: {file.UploadedByEmpName}
                                                             </div>
                                                         </div>
-                                                        <a
-                                                            href={fileUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            download={file.FileName}
-                                                            className="p-2.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl border border-slate-100 hover:border-blue-200 transition-all active:scale-95"
-                                                            title="Tải về hoặc Xem"
-                                                        >
-                                                            <Download className="w-5 h-5" />
-                                                        </a>
+                                                        <div className="flex gap-2">
+                                                            {(['jpg', 'jpeg', 'png', 'gif', 'svg', 'pdf'].some(ext => file.FileName?.toLowerCase().endsWith(ext))) && (
+                                                                <button
+                                                                    onClick={() => setPreviewFile({ url: fileUrl, name: file.FileName })}
+                                                                    className="p-2.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl border border-slate-100 hover:border-blue-200 transition-all active:scale-95"
+                                                                    title="Xem nhanh"
+                                                                >
+                                                                    <Eye className="w-5 h-5" />
+                                                                </button>
+                                                            )}
+                                                            <a
+                                                                href={fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                download={file.FileName}
+                                                                className="p-2.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl border border-slate-100 hover:border-blue-200 transition-all active:scale-95"
+                                                                title="Tải về hoặc Xem"
+                                                            >
+                                                                <Download className="w-5 h-5" />
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -1650,6 +1745,58 @@ export default function ReportDetail() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                Modal 3 — Xem Trước Tệp (Preview)
+            ══════════════════════════════════════════════════════════ */}
+            {previewFile && (
+                <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-100 flex flex-col animate-in fade-in transition-all">
+                    <div className="flex items-center justify-between p-4 bg-slate-900/50 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-600 text-white rounded-lg">
+                                <Paperclip className="w-5 h-5" />
+                            </div>
+                            <span className="font-bold text-white text-sm truncate max-w-md">
+                                {previewFile.name}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setPreviewFile(null)}
+                            className="p-2 hover:bg-white/10 text-white/70 hover:text-white rounded-full transition-all group"
+                        >
+                            <XCircle className="w-8 h-8 group-hover:scale-110" />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-auto p-4 md:p-12 flex items-center justify-center">
+                        {previewFile.name.toLowerCase().endsWith('.pdf') ? (
+                            <iframe
+                                src={`${previewFile.url}#toolbar=0`}
+                                className="w-full h-full max-w-5xl bg-white rounded-2xl shadow-2xl border-none"
+                                title="PDF Preview"
+                            ></iframe>
+                        ) : (
+                            <img
+                                src={previewFile.url}
+                                crossOrigin="anonymous"
+                                alt="Preview"
+                                className="max-w-full max-h-full object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-300"
+                            />
+                        )
+                        }
+                    </div>
+
+                    <div className="p-4 flex justify-center gap-4">
+                        <a
+                            href={previewFile.url}
+                            download={previewFile.name}
+                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                        >
+                            <Download className="w-5 h-5" /> Tải về tệp
+                        </a>
                     </div>
                 </div>
             )}

@@ -67,7 +67,7 @@ class ReportRepository extends DbRepository {
                 occurredDeptCode_NT: report.OccurredDeptCode_NT,
                 occurredDeptName_NT: report.OccurredDeptName_NT,
             },
-            impacts: impacts.map(i => i.ImpactCode),
+            impacts,
             coordDepartments: coordDepts,
             responses,
             costLines,
