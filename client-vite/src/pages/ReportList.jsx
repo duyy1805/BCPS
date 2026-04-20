@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Plus, Filter, Eye } from "lucide-react";
+import { Search, Plus, Filter, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import api, { formatMoney, formatDate } from "../utils/api";
 import StatusBadge from "../components/ui/StatusBadge";
 import { useUI } from "../context/UIContext";
@@ -14,8 +14,11 @@ export default function ReportList() {
     const [onlyMyPending, setOnlyMyPending] = useState(true);
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [meta, setMeta] = useState({ totalRows: 0, totalPages: 0 });
 
-    const loadData = async () => {
+    const loadData = async (pageNum = page) => {
         setLoading(true);
         try {
             const roles = user?.roles || [];
@@ -24,11 +27,11 @@ export default function ReportList() {
             const onlyPending =
                 isManagerOrBGD && onlyMyPending ? "&onlyNeedMyApproval=true" : "";
 
-            const query = `?pageNumber=1&pageSize=50&keyword=${encodeURIComponent(keyword)}&statusCode=${status}${onlyPending}`;
+            const query = `?pageNumber=${pageNum}&pageSize=${pageSize}&keyword=${encodeURIComponent(keyword)}&statusCode=${status}${onlyPending}`;
             const { data } = await api.get(`/reports${query}`);
-            console.log(data);
             if (data.success) {
                 setReports(data.data.items || []);
+                setMeta(data.data.meta || { totalRows: 0, totalPages: 0 });
             }
         } catch {
             showToast("Lỗi tải danh sách báo cáo", "error");
@@ -38,13 +41,21 @@ export default function ReportList() {
     };
 
     useEffect(() => {
-        loadData();
+        loadData(page);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [page, pageSize]);
+
+    // Reset to page 1 when status or onlyMyPending filters change
+    useEffect(() => {
+        setPage(1);
+        loadData(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status, onlyMyPending]);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        loadData();
+        setPage(1);
+        loadData(1);
     };
 
     return (
@@ -214,6 +225,70 @@ export default function ReportList() {
                     </table>
                 </div>
             </div>
+
+            {/* Pagination Control - Style Material/DataTable like requested */}
+            {!loading && meta.totalRows > 0 && (
+                <div className="flex items-center justify-end gap-8 px-2 py-4 text-slate-600 font-medium">
+                    {/* Rows per page selector */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-[13px] text-slate-500">Số dòng/trang:</span>
+                        <select
+                            value={pageSize}
+                            onChange={(e) => {
+                                setPageSize(Number(e.target.value));
+                                setPage(1);
+                            }}
+                            className="bg-transparent border-none outline-none text-[13px] font-bold text-slate-700 cursor-pointer focus:ring-0 appearance-none pr-1"
+                        >
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                        {/* Custom arrow for select if needed, or keep it standard */}
+                        <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-slate-500 -ml-1 mt-0.5 pointer-events-none"></div>
+                    </div>
+
+                    {/* Status Text: x-y trên z */}
+                    <div className="text-[13px] tracking-tight">
+                        <span className="font-bold text-slate-800">
+                            {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, meta.totalRows)}
+                        </span>
+                        <span className="mx-1 text-slate-400">trên</span>
+                        <span className="font-bold text-slate-800">{meta.totalRows}</span>
+                    </div>
+
+                    {/* Navigation Arrows */}
+                    <div className="flex items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="p-2 hover:bg-slate-100 rounded-full disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-90"
+                            title="Trang trước"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-slate-600" />
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                            disabled={page === meta.totalPages}
+                            className="p-2 hover:bg-slate-100 rounded-full disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-90"
+                            title="Trang sau"
+                        >
+                            <ChevronRight className="w-5 h-5 text-slate-600" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
+}
+
+/**
+ * Helper to combine class names
+ */
+function cn(...classes) {
+    return classes.filter(Boolean).join(" ");
 }
