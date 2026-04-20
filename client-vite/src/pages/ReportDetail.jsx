@@ -382,7 +382,7 @@ export default function ReportDetail() {
             coordDepartmentCodesCsv:
                 data.coordDepartments?.map((d) => d.DepartmentCode).join(",") || "",
             impactCodesCsv: data.impacts?.map((i) => i.ImpactCode).join(",") || "",
-            occurredDeptCode_NT: r.OccurredDeptCode_NT || "",
+            occurredDeptCode_NT: r.OccurredDeptName_NT || "",
         });
         setIsEditing(true);
     };
@@ -903,12 +903,12 @@ export default function ReportDetail() {
                                                             <SearchSelect
                                                                 placeholder="-- Không có / Khác --"
                                                                 apiPath={`/employees/${editForm.mainResponsibleEmpCode}/managed-departments`}
-                                                                valueField="DepartmentCode"
+                                                                valueField="DepartmentName"
                                                                 labelField="DepartmentName"
-                                                                subLabelField="DepartmentCode"
+                                                                // subLabelField="DepartmentCode"
                                                                 initialValue={editForm.occurredDeptCode_NT}
-                                                                initialLabel={r.OccurredDeptName_NT || ""}
-                                                                onSelect={dept => setEditForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentCode || '' }))}
+                                                                initialLabel={editForm.occurredDeptCode_NT}
+                                                                onSelect={dept => setEditForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentName || '' }))}
                                                             />
                                                         </div>
                                                     )}
