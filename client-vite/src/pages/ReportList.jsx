@@ -200,6 +200,11 @@ export default function ReportList() {
                                                 status={r.StatusCode}
                                                 text={r.DynamicCurrentStep}
                                             />
+                                            {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
+                                                <div className="text-[10px] text-slate-400 mt-1 font-medium italic max-w-[150px] mx-auto leading-tight">
+                                                    Chờ: {r.PendingDepts}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="p-5 text-center">
                                             <Link

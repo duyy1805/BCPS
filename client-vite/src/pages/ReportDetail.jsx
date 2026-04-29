@@ -69,6 +69,28 @@ export default function ReportDetail() {
         setShowRespModal(true);
     };
 
+    /**
+     * Hàm tải file thủ công bằng Blob để ép trình duyệt tải về thay vì mở trực tiếp
+     */
+    const handleDownload = async (url, fileName) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Network response was not ok");
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Download failed:", error);
+            showToast("Tải tệp thất bại", "error");
+        }
+    };
+
     const [costForm, setCostForm] = useState({
         costTypeId: "",
         costItemDesc: "",
@@ -155,13 +177,16 @@ export default function ReportDetail() {
                     );
 
                     if (!canDoSomething && !isInApprovalChain && !hasActed) {
-                        setData(null);
+                        // setData(null);
+                        setData(reportData);
                         setActions(null);
                         setLoading(false);
                         return;
                     }
                 }
+                console.log("coordDepartments data:", reportData.coordDepartments);
                 setData(reportData);
+                console.log(actionData)
                 setActions(actionData);
             } else {
                 setData(null);
@@ -585,12 +610,12 @@ export default function ReportDetail() {
                             >
                                 Trả Lại
                             </button>
-                            <button
+                            {/* <button
                                 onClick={() => approveReport("REJECTED")}
                                 className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600"
                             >
                                 <XCircle className="w-4 h-4 mr-2" /> Từ Chối
-                            </button>
+                            </button> */}
                             <button
                                 onClick={() => approveReport("APPROVED")}
                                 className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-green-600 hover:bg-green-700 text-white shadow-green-200"
@@ -905,7 +930,7 @@ export default function ReportDetail() {
                                                                 apiPath={`/employees/${editForm.mainResponsibleEmpCode}/managed-departments`}
                                                                 valueField="DepartmentName"
                                                                 labelField="DepartmentName"
-                                                                // subLabelField="DepartmentCode"
+                                                                subLabelField="DepartmentCode"
                                                                 initialValue={editForm.occurredDeptCode_NT}
                                                                 initialLabel={editForm.occurredDeptCode_NT}
                                                                 onSelect={dept => setEditForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentName || '' }))}
@@ -1059,6 +1084,22 @@ export default function ReportDetail() {
                                                         label="Nhân viên phụ trách"
                                                         value={r.MainResponsibleEmpName}
                                                     />
+                                                    {data?.coordDepartments?.filter(cd => cd.FeedbackStatusCode?.toUpperCase() === 'PENDING').length > 0 && (
+                                                        <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-xl animate-in fade-in slide-in-from-top-2">
+                                                            <div className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                                <Clock className="w-3 h-3" /> Chờ phản hồi từ
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {data.coordDepartments
+                                                                    .filter(cd => cd.FeedbackStatusCode?.toUpperCase() === 'PENDING')
+                                                                    .map((cd, idx) => (
+                                                                        <span key={idx} className="px-2 py-0.5 bg-white border border-red-200 text-red-600 rounded-lg text-[11px] font-black shadow-sm">
+                                                                            {cd.DepartmentName || cd.DepartmentCode}
+                                                                        </span>
+                                                                    ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                     <Field
                                                         label="Mã Kế hoạch ERP"
                                                         value={r.SourcePlanNo}
@@ -1368,16 +1409,13 @@ export default function ReportDetail() {
                                                                     <Eye className="w-5 h-5" />
                                                                 </button>
                                                             )}
-                                                            <a
-                                                                href={fileUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                download={file.FileName}
+                                                            <button
+                                                                onClick={() => handleDownload(fileUrl, file.FileName)}
                                                                 className="p-2.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl border border-slate-100 hover:border-blue-200 transition-all active:scale-95"
-                                                                title="Tải về hoặc Xem"
+                                                                title="Tải về máy"
                                                             >
                                                                 <Download className="w-5 h-5" />
-                                                            </a>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 );
@@ -1790,13 +1828,12 @@ export default function ReportDetail() {
                     </div>
 
                     <div className="p-4 flex justify-center gap-4">
-                        <a
-                            href={previewFile.url}
-                            download={previewFile.name}
-                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                        <button
+                            onClick={() => handleDownload(previewFile.url, previewFile.name)}
+                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
                         >
                             <Download className="w-5 h-5" /> Tải về tệp
-                        </a>
+                        </button>
                     </div>
                 </div>
             )}
