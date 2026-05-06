@@ -22,6 +22,9 @@ export default function Dashboard() {
         trendByDay: [],
         statusBreakdown: [],
         topOccurredDepartments: [],
+        topResponsibleDepartments: [],
+        topResponsibleEmployees: [],
+        topCausedByDepartments: [],
         overdueItems: []
     });
     const [loading, setLoading] = useState(true);
@@ -32,7 +35,7 @@ export default function Dashboard() {
             const query = `?fromDate=${filter.fromDate}&toDate=${filter.toDate}`;
             const res = await api.get(`/dashboard/management${query}`);
             if (res.data.success && res.data.data) {
-                setData(res.data.data);
+                setData(prev => ({ ...prev, ...res.data.data }));
             }
         } catch {
             showToast('Lỗi tải dữ liệu Dashboard', 'error');
@@ -83,6 +86,47 @@ export default function Dashboard() {
         datasets: [{
             data: data.statusBreakdown.map(d => d.ReportCount),
             backgroundColor: data.statusBreakdown.map(d => statusColors[d.StatusCode] || '#cbd5e1'),
+            borderWidth: 1
+        }]
+    };
+
+    const chartColors = [
+        '#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ec4899',
+        '#8b5cf6', '#14b8a6', '#f97316', '#06b6d4', '#ef4444'
+    ];
+
+    const occurredDeptChartData = {
+        labels: (data.topOccurredDepartments || []).map(d => d.OccurredDepartmentName || d.OccurredDepartmentCode || 'N/A'),
+        datasets: [{
+            data: (data.topOccurredDepartments || []).map(d => d.ReportCount),
+            backgroundColor: (data.topOccurredDepartments || []).map((_, i) => chartColors[i % chartColors.length]),
+            borderWidth: 1
+        }]
+    };
+
+    const causedByDeptChartData = {
+        labels: (data.topCausedByDepartments || []).map(d => d.OccurredDeptName_NT || d.OccurredDeptCode_NT || 'N/A'),
+        datasets: [{
+            data: (data.topCausedByDepartments || []).map(d => d.ReportCount),
+            backgroundColor: (data.topCausedByDepartments || []).map((_, i) => chartColors[(i + 2) % chartColors.length]),
+            borderWidth: 1
+        }]
+    };
+
+    const responsibleDeptChartData = {
+        labels: (data.topResponsibleDepartments || []).map(d => d.ResponsibleDeptName || 'N/A'),
+        datasets: [{
+            data: (data.topResponsibleDepartments || []).map(d => d.ReportCount),
+            backgroundColor: (data.topResponsibleDepartments || []).map((_, i) => chartColors[i % chartColors.length]),
+            borderWidth: 1
+        }]
+    };
+
+    const responsibleEmpChartData = {
+        labels: (data.topResponsibleEmployees || []).map(d => d.MainResponsibleEmpName || 'N/A'),
+        datasets: [{
+            data: (data.topResponsibleEmployees || []).map(d => d.ReportCount),
+            backgroundColor: (data.topResponsibleEmployees || []).map((_, i) => chartColors[i % chartColors.length]),
             borderWidth: 1
         }]
     };
@@ -167,10 +211,51 @@ export default function Dashboard() {
                 </div>
             </div>
 
+
+
+            <div className="grid grid-cols-3 gap-6">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0 text-sm">Cơ cấu Đơn vị gây phát sinh</div>
+                    <div className="p-4 flex-1 flex items-center justify-center">
+                        <div className="h-56 w-full">
+                            {(!data.topCausedByDepartments || data.topCausedByDepartments.length === 0) ? (
+                                <div className="h-full flex items-center justify-center text-slate-400 font-medium text-sm">Không có dữ liệu</div>
+                            ) : (
+                                <Doughnut data={causedByDeptChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '60%' }} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0 text-sm">Cơ cấu BP chịu trách nhiệm</div>
+                    <div className="p-4 flex-1 flex items-center justify-center">
+                        <div className="h-56 w-full">
+                            {(!data.topResponsibleDepartments || data.topResponsibleDepartments.length === 0) ? (
+                                <div className="h-full flex items-center justify-center text-slate-400 font-medium text-sm">Không có dữ liệu</div>
+                            ) : (
+                                <Doughnut data={responsibleDeptChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '60%' }} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0 text-sm">Cơ cấu Nhân viên phụ trách</div>
+                    <div className="p-4 flex-1 flex items-center justify-center">
+                        <div className="h-56 w-full">
+                            {(!data.topResponsibleEmployees || data.topResponsibleEmployees.length === 0) ? (
+                                <div className="h-full flex items-center justify-center text-slate-400 font-medium text-sm">Không có dữ liệu</div>
+                            ) : (
+                                <Doughnut data={responsibleEmpChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '60%' }} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Tables */}
             <div className="grid grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0">Top Bộ phận Xảy ra Lỗi</div>
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0">Top Bộ phận xảy ra lỗi</div>
                     <div className="p-0 overflow-auto max-h-80 custom-scrollbar">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 shadow-sm">
@@ -181,7 +266,7 @@ export default function Dashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {data.topOccurredDepartments.length === 0 ? (
+                                {(!data.topOccurredDepartments || data.topOccurredDepartments.length === 0) ? (
                                     <tr><td colSpan="3" className="p-6 text-center text-slate-500 font-medium">Không có dữ liệu</td></tr>
                                 ) : (
                                     data.topOccurredDepartments.map((d, i) => (
@@ -189,6 +274,86 @@ export default function Dashboard() {
                                             <td className="p-4 font-bold text-slate-700">{d.OccurredDepartmentName || d.OccurredDepartmentCode}</td>
                                             <td className="p-4 text-center font-bold text-slate-800 bg-slate-50/50">{d.ReportCount}</td>
                                             <td className="p-4 text-right font-bold text-red-600">{formatMoney(d.TotalEstimatedCost)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0">Top Đơn vị gây phát sinh</div>
+                    <div className="p-0 overflow-auto max-h-80 custom-scrollbar">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 shadow-sm">
+                                <tr>
+                                    <th className="p-4 font-bold text-slate-600">Đơn vị</th>
+                                    <th className="p-4 text-center font-bold text-slate-600">Số lượng BC</th>
+                                    <th className="p-4 text-right font-bold text-slate-600">Chi phí (VNĐ)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {(!data.topCausedByDepartments || data.topCausedByDepartments.length === 0) ? (
+                                    <tr><td colSpan="3" className="p-6 text-center text-slate-500 font-medium">Không có dữ liệu</td></tr>
+                                ) : (
+                                    data.topCausedByDepartments.map((d, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="p-4 font-bold text-slate-700">{d.OccurredDeptName_NT || d.OccurredDeptCode_NT || 'N/A'}</td>
+                                            <td className="p-4 text-center font-bold text-slate-800 bg-slate-50/50">{d.ReportCount}</td>
+                                            <td className="p-4 text-right font-bold text-red-600">{formatMoney(d.TotalEstimatedCost)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0">Top Bộ phận chịu trách nhiệm</div>
+                    <div className="p-0 overflow-auto max-h-80 custom-scrollbar">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 shadow-sm">
+                                <tr>
+                                    <th className="p-4 font-bold text-slate-600">Bộ phận</th>
+                                    <th className="p-4 text-right font-bold text-slate-600">Số lượng BC</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {(!data.topResponsibleDepartments || data.topResponsibleDepartments.length === 0) ? (
+                                    <tr><td colSpan="2" className="p-6 text-center text-slate-500 font-medium">Không có dữ liệu</td></tr>
+                                ) : (
+                                    data.topResponsibleDepartments.map((d, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="p-4 font-bold text-slate-700">{d.ResponsibleDeptName || 'N/A'}</td>
+                                            <td className="p-4 text-right font-bold text-slate-800 bg-slate-50/50">{d.ReportCount}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 shrink-0">Top Nhân viên phụ trách</div>
+                    <div className="p-0 overflow-auto max-h-80 custom-scrollbar">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 shadow-sm">
+                                <tr>
+                                    <th className="p-4 font-bold text-slate-600">Nhân viên</th>
+                                    <th className="p-4 text-right font-bold text-slate-600">Số lượng BC</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {(!data.topResponsibleEmployees || data.topResponsibleEmployees.length === 0) ? (
+                                    <tr><td colSpan="2" className="p-6 text-center text-slate-500 font-medium">Không có dữ liệu</td></tr>
+                                ) : (
+                                    data.topResponsibleEmployees.map((d, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="p-4 font-bold text-slate-700">{d.MainResponsibleEmpName || 'N/A'}</td>
+                                            <td className="p-4 text-right font-bold text-slate-800 bg-slate-50/50">{d.ReportCount}</td>
                                         </tr>
                                     ))
                                 )}
@@ -212,7 +377,7 @@ export default function Dashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {data.overdueItems.length === 0 ? (
+                                {(!data.overdueItems || data.overdueItems.length === 0) ? (
                                     <tr><td colSpan="3" className="p-6 text-center text-emerald-600 font-bold">Tuyệt vời! Không có báo cáo nào quá hạn.</td></tr>
                                 ) : (
                                     data.overdueItems.map((item, i) => (

@@ -17,7 +17,9 @@ class DashboardService {
             topExceptionCauses: result.recordsets[4] || [],
             topResponsibleDepartments: result.recordsets[5] || [],
             topOccurredDepartments: result.recordsets[6] || [],
-            overdueItems: result.recordsets[7] || []
+            overdueItems: result.recordsets[7] || [],
+            topResponsibleEmployees: result.recordsets[8] || [],
+            topCausedByDepartments: result.recordsets[9] || []
         });
     }
 
