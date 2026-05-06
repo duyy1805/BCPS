@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Loader2, ChevronDown } from 'lucide-react';
 import api from '../../utils/api';
 import { cn } from '../../context/UIContext';
@@ -22,6 +22,21 @@ export default function SearchSelect({
     const wrapperRef = useRef(null);
     const searchTimeout = useRef(null);
 
+    const fetchOptions = useCallback(async (keyword) => {
+        setLoading(true);
+        try {
+            const { data } = await api.get(`${apiPath}${apiPath.includes('?') ? '&' : '?'}keyword=${encodeURIComponent(keyword)}`);
+            if (data.success) {
+                console.log(data.data)
+                setOptions(data.data.items || []);
+            }
+        } catch (err) {
+            console.error("Search error:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [apiPath]);
+
     useEffect(() => {
         if (initialValue !== undefined && initialValue !== null && initialValue !== "") {
             // Chỉ cập nhật nếu giá trị thực sự khác biệt để tránh mất nhãn (label) khi state cha thay đổi
@@ -40,7 +55,7 @@ export default function SearchSelect({
         if (isOpen) {
             fetchOptions("");
         }
-    }, [apiPath]);
+    }, [apiPath, isOpen, fetchOptions]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -51,21 +66,6 @@ export default function SearchSelect({
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    const fetchOptions = async (keyword) => {
-        setLoading(true);
-        try {
-            const { data } = await api.get(`${apiPath}${apiPath.includes('?') ? '&' : '?'}keyword=${encodeURIComponent(keyword)}`);
-            if (data.success) {
-                console.log(data.data)
-                setOptions(data.data.items || []);
-            }
-        } catch (err) {
-            console.error("Search error:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleSearchChange = (e) => {
         const val = e.target.value;

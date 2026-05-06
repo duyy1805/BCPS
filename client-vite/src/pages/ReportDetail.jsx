@@ -661,17 +661,17 @@ export default function ReportDetail() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Content */}
-                <div className="col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="flex border-b border-slate-100 bg-slate-50/50">
+                        <div className="flex border-b border-slate-100 bg-slate-50/50 overflow-x-auto custom-scrollbar">
                             {["overview", "responses", "costs", "attachments"].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={cn(
-                                        "px-6 py-4 text-sm font-bold border-b-2 transition-colors uppercase tracking-wider",
+                                        "px-4 md:px-6 py-4 text-[11px] md:text-sm font-bold border-b-2 transition-colors uppercase tracking-wider whitespace-nowrap",
                                         activeTab === tab
                                             ? "border-blue-600 text-blue-600"
                                             : "border-transparent text-slate-500 hover:text-slate-800",
@@ -688,13 +688,13 @@ export default function ReportDetail() {
                             ))}
                         </div>
 
-                        <div className="p-6">
+                        <div className="p-4 md:p-6">
                             {/* ── Tab Tổng quan ── */}
                             {activeTab === "overview" && (
                                 <div className="space-y-6 animate-in fade-in">
                                     {isEditing ? (
                                         <div className="space-y-6">
-                                            <div className="grid grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-4">
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
@@ -1206,7 +1206,7 @@ export default function ReportDetail() {
                                                                 {resp.ResponseContent || "--"}
                                                             </p>
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div>
                                                                 <span className="font-bold text-slate-700 block text-xs tracking-wider uppercase mb-1">
                                                                     Đánh giá nguyên nhân:
@@ -1477,7 +1477,7 @@ export default function ReportDetail() {
                             Ghi Phản Hồi Từ Bộ Phận Liên Quan
                         </h3>
                         <div className="space-y-5">
-                            <div className="grid grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
                                     <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">
                                         Bộ Phận Phản Hồi
@@ -1539,7 +1539,7 @@ export default function ReportDetail() {
                                 ></textarea>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
                                     <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">
                                         Đánh giá Root Cause
@@ -1627,7 +1627,7 @@ export default function ReportDetail() {
 
                                     {/* Form nhập dòng chi phí mới */}
                                     <div className="bg-slate-50/50 p-4 rounded-2xl border border-dashed border-slate-300 space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
                                                     Loại Chi Phí (*)

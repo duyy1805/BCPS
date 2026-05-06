@@ -256,27 +256,27 @@ export default function ReportCreate() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Col - ERP Search & Form */}
-                <div className="col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                     {/* ERP Search */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">1. Chọn kế hoạch</h3>
-                        <div className="flex gap-3 mb-4">
+                    <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <h3 className="text-[11px] md:text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">1. Chọn kế hoạch</h3>
+                        <div className="flex flex-col md:flex-row gap-3 mb-4">
                             <input
                                 type="text"
                                 value={erpSearch}
                                 onChange={e => setErpSearch(e.target.value)}
-                                className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm md:text-base"
                                 placeholder="Nhập Lệnh SX, Mã kế hoạch..."
                             />
-                            <button onClick={searchERP} className="px-5 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors">Tìm</button>
+                            <button onClick={searchERP} className="px-5 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors text-sm">Tìm kế hoạch</button>
                         </div>
 
                         {erpPlans.length > 0 && (
                             <select
                                 onChange={e => setSelectedPlan(erpPlans.find(p => p.PlanSelectKey === e.target.value))}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-xl mb-4 bg-slate-50 outline-none focus:border-blue-500"
+                                className="w-full px-4 py-2 border border-slate-200 rounded-xl mb-4 bg-slate-50 outline-none focus:border-blue-500 text-sm"
                             >
                                 <option value="">-- Chọn dòng kế hoạch phù hợp --</option>
                                 {erpPlans.map(p => (
@@ -286,40 +286,40 @@ export default function ReportCreate() {
                         )}
 
                         {selectedPlan && (
-                            <div className="grid grid-cols-3 gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 animate-in fade-in">
-                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Mã Đơn Hàng</div><div className="font-bold text-slate-900">{selectedPlan.OrderCode}</div></div>
-                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Sản phẩm</div><div className="font-bold text-slate-900">{selectedPlan.ProductName}</div></div>
-                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Bộ phận</div><div className="font-bold text-slate-900">{selectedPlan.DepartmentName}</div></div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 animate-in fade-in">
+                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Mã Đơn Hàng</div><div className="font-bold text-slate-900 text-sm">{selectedPlan.OrderCode}</div></div>
+                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Sản phẩm</div><div className="font-bold text-slate-900 text-sm truncate">{selectedPlan.ProductName}</div></div>
+                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Bộ phận</div><div className="font-bold text-slate-900 text-sm">{selectedPlan.DepartmentName}</div></div>
                             </div>
                         )}
                     </div>
 
                     {/* Main Form Box */}
-                    <div className={cn("bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-opacity", !selectedPlan && "opacity-50 pointer-events-none")}>
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">2. Thông tin sự việc</h3>
+                    <div className={cn("bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm transition-opacity", !selectedPlan && "opacity-50 pointer-events-none")}>
+                        <h3 className="text-[11px] md:text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">2. Thông tin sự việc</h3>
 
                         <div className="space-y-5">
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-2">Mô tả ngắn gọn sự cố (*)</label>
-                                <textarea value={form.shortDesc} onChange={e => setForm({ ...form, shortDesc: e.target.value })} rows="2" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500"></textarea>
+                                <textarea value={form.shortDesc} onChange={e => setForm({ ...form, shortDesc: e.target.value })} rows="2" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 text-sm md:text-base"></textarea>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-5">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Loại phát sinh</label>
-                                    <select value={form.typeId} onChange={e => setForm({ ...form, typeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50">
+                                    <label className="block text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-2">Loại phát sinh</label>
+                                    <select value={form.typeId} onChange={e => setForm({ ...form, typeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold">
                                         {masterData.exceptionTypes.map(t => <option key={t.ExceptionTypeID} value={t.ExceptionTypeID}>{t.ExceptionTypeName}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Nguyên nhân</label>
-                                    <select value={form.causeId} onChange={e => setForm({ ...form, causeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50">
+                                    <label className="block text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-2">Nguyên nhân</label>
+                                    <select value={form.causeId} onChange={e => setForm({ ...form, causeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold">
                                         {masterData.exceptionCauses.map(c => <option key={c.ExceptionCauseID} value={c.ExceptionCauseID}>{c.ExceptionCauseName}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Mức độ độ ảnh hưởng (*)</label>
-                                    <select value={form.severityCode} onChange={e => setForm({ ...form, severityCode: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 font-bold text-blue-600">
+                                    <label className="block text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-2">Mức độ ảnh hưởng (*)</label>
+                                    <select value={form.severityCode} onChange={e => setForm({ ...form, severityCode: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 font-bold text-blue-600 text-sm">
                                         {masterData.severities.map(s => <option key={s.SeverityCode} value={s.SeverityCode}>{s.SeverityName}</option>)}
                                     </select>
                                 </div>
