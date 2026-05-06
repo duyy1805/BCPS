@@ -36,8 +36,8 @@ export default function MainLayout() {
         <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800">
             {/* Backdrop for mobile */}
             {isMobileMenuOpen && (
-                <div 
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] md:hidden transition-opacity duration-300 animate-in fade-in"
+                <div
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-45 md:hidden transition-opacity duration-300 animate-in fade-in"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
@@ -50,16 +50,16 @@ export default function MainLayout() {
             )}>
                 <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950 text-white font-bold text-lg gap-2 overflow-hidden shrink-0">
                     <div className="flex items-center min-w-max gap-3">
-                        <AlertTriangle className="w-8 h-8 text-blue-500 shrink-0" /> 
+                        <AlertTriangle className="w-8 h-8 text-blue-500 shrink-0" />
                         {(!isCollapsed || isMobileMenuOpen) && <span className="animate-in fade-in slide-in-from-left-4 duration-500">BCPS SYSTEM</span>}
                     </div>
                 </div>
-                
+
                 <div className="flex-1 py-6 overflow-y-auto custom-scrollbar overflow-x-hidden">
                     {navItems.map((item, idx) => {
-                        const isActive = location.pathname === item.path || 
-                                         (item.path === '/reports' && location.pathname.startsWith('/reports') && location.pathname !== '/reports/create');
-                        
+                        const isActive = location.pathname === item.path ||
+                            (item.path === '/reports' && location.pathname.startsWith('/reports') && location.pathname !== '/reports/create');
+
                         const showLabel = !isCollapsed || isMobileMenuOpen;
 
                         return (
@@ -70,15 +70,15 @@ export default function MainLayout() {
                                     </div>
                                 )}
                                 {item.category && !showLabel && idx !== 0 && <div className="mx-4 my-4 border-t border-slate-800" />}
-                                
-                                <Link 
-                                    to={item.path} 
+
+                                <Link
+                                    to={item.path}
                                     title={!showLabel ? item.label : ""}
                                     className={cn(
                                         "w-full flex items-center transition-all duration-200 group relative",
                                         !showLabel ? "justify-center py-4 px-0" : "px-6 py-3",
-                                        isActive 
-                                            ? "bg-blue-600/15 text-blue-400" 
+                                        isActive
+                                            ? "bg-blue-600/15 text-blue-400"
                                             : "hover:bg-slate-800 hover:text-slate-200"
                                     )}
                                 >
@@ -86,12 +86,12 @@ export default function MainLayout() {
                                         "absolute inset-y-0 right-0 w-1 transition-all duration-300",
                                         isActive ? "bg-blue-500" : "bg-transparent group-hover:bg-slate-700"
                                     )} />
-                                    
+
                                     <item.icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300", showLabel && "mr-3", !showLabel && isActive && "scale-110")} />
                                     {showLabel && <span className="truncate animate-in fade-in slide-in-from-left-2 duration-300">{item.label}</span>}
-                                    
+
                                     {!showLabel && (
-                                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[60] whitespace-nowrap shadow-lg border border-slate-700">
+                                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-60 whitespace-nowrap shadow-lg border border-slate-700">
                                             {item.label}
                                         </div>
                                     )}
@@ -102,7 +102,7 @@ export default function MainLayout() {
                 </div>
 
                 <div className="p-4 border-t border-slate-800 bg-slate-950/50 hidden md:block">
-                    <button 
+                    <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         className="w-full h-10 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95 shadow-inner"
                     >
@@ -120,7 +120,7 @@ export default function MainLayout() {
                 {/* Header */}
                 <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 transition-all shadow-sm shadow-slate-100/50">
                     <div className="flex items-center gap-4">
-                        <button 
+                        <button
                             onClick={() => setIsMobileMenuOpen(true)}
                             className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg md:hidden transition-colors"
                         >
@@ -129,22 +129,22 @@ export default function MainLayout() {
                         <div className="flex items-center text-slate-500 text-sm font-medium">
                             <span className="text-slate-400 hidden sm:inline">Hệ thống</span>
                             <ChevronRight className="w-4 h-4 mx-2 text-slate-300 hidden sm:inline" />
-                            <span className="text-slate-800 font-bold bg-slate-100 px-3 py-1 rounded-md max-w-[150px] sm:max-w-none truncate">{getPageTitle()}</span>
+                            <span className="text-slate-800 font-bold bg-slate-100 px-3 py-1 rounded-md max-w-37.5 sm:max-w-none truncate">{getPageTitle()}</span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3 md:gap-5">
                         <div className="text-sm font-medium text-slate-600 bg-slate-50 px-3 md:px-4 py-1.5 rounded-full border border-slate-100 flex items-center">
-                            <span className="hidden sm:inline opacity-70 mr-1">Xin chào,</span> 
-                            <span className="text-blue-600 font-bold truncate max-w-[80px] md:max-w-none">{user.userName}</span>
+                            <span className="hidden sm:inline opacity-70 mr-1">Xin chào,</span>
+                            <span className="text-blue-600 font-bold truncate max-w-20 md:max-w-none">{user.userName}</span>
                         </div>
                         <div className="h-6 w-px bg-slate-200 hidden xs:block"></div>
-                        <button 
-                            onClick={logout} 
+                        <button
+                            onClick={logout}
                             className="text-red-500 hover:text-red-600 hover:bg-red-50 p-2 md:px-3 md:py-1.5 rounded-lg text-sm font-bold flex items-center transition-colors"
                             title="Thoát"
                         >
-                            <LogOut className="w-4 h-4 md:mr-1.5" /> 
+                            <LogOut className="w-4 h-4 md:mr-1.5" />
                             <span className="hidden md:inline">Thoát</span>
                         </button>
                     </div>

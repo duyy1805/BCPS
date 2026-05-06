@@ -65,7 +65,15 @@ export default function ReportDetail() {
                 showToast("Không tải được danh mục", "error");
             }
         }
-        setRespForm((prev) => ({ ...prev, departmentCode: user?.deptCode || "" }));
+        setRespForm((prev) => ({
+            ...prev,
+            departmentCode: user?.deptCode || "",
+            responseContent: "",
+            causeAssessment: "",
+            proposedAction: "",
+            hasDeptCost: false,
+            costs: []
+        }));
         setShowRespModal(true);
     };
 
@@ -503,7 +511,7 @@ export default function ReportDetail() {
                 className={cn(
                     "p-6 rounded-2xl border shadow-sm flex items-center justify-between flex-wrap gap-4 ",
                     r.HasCost
-                        ? "bg-gradient-to-r from-white to-orange-50/30 border-orange-200 shadow-orange-100/50"
+                        ? "bg-linear-to-r from-white to-orange-50/30 border-orange-200 shadow-orange-100/50"
                         : "bg-white border-slate-200",
                 )}
             >
@@ -1482,10 +1490,25 @@ export default function ReportDetail() {
                                     <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">
                                         Bộ Phận Phản Hồi
                                     </label>
-                                    <div className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-100 font-bold text-slate-700 flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                        {user?.unitName} ({user?.deptCode})
-                                    </div>
+                                    {user?.deptCode ? (
+                                        <div className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-100 font-bold text-slate-700 flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                            {user?.unitName} ({user?.deptCode})
+                                        </div>
+                                    ) : (
+                                        <select
+                                            value={respForm.departmentCode}
+                                            onChange={(e) => setRespForm({ ...respForm, departmentCode: e.target.value })}
+                                            className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
+                                        >
+                                            <option value="">-- Chọn bộ phận phối hợp --</option>
+                                            {data?.coordDepartments?.map(dept => (
+                                                <option key={dept.DepartmentCode} value={dept.DepartmentCode}>
+                                                    {dept.DepartmentName || dept.DepartmentCode}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
                                 <div className="flex flex-col justify-end pb-1">
                                     {r.HasCost && (
@@ -1603,7 +1626,7 @@ export default function ReportDetail() {
                                                                 <div className="font-bold text-slate-700">
                                                                     {c.costTypeName}
                                                                 </div>
-                                                                <div className="text-slate-500 truncate max-w-[200px]">
+                                                                <div className="text-slate-500 truncate max-w-50">
                                                                     {c.costItemDesc}
                                                                 </div>
                                                             </td>
@@ -1739,7 +1762,7 @@ export default function ReportDetail() {
                                             </div>
                                         ) : (
                                             <div>
-                                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 text-red-500">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
                                                     Thành Tiền (VNĐ) (*)
                                                 </label>
                                                 <input

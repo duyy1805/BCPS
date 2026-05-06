@@ -378,7 +378,7 @@ export default function ReportCreate() {
 
                             {managedDepts.length > 0 && (
                                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl animate-in fade-in duration-300">
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 items-center gap-2">
                                         <Info className="w-3 h-3" /> Đơn vị gây phát sinh (nếu có)
                                     </label>
                                     <SearchSelect

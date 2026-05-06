@@ -133,7 +133,7 @@ export default function ReportList() {
             {/* Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left min-w-[700px] md:min-w-0">
+                    <table className="w-full text-left min-w-175 md:min-w-0">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                             <tr>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Mã BCPS / Ngày</th>
@@ -176,7 +176,7 @@ export default function ReportList() {
                                             <div className="font-bold text-slate-700 text-sm">
                                                 {r.OrderCode || "N/A"}
                                             </div>
-                                            <div className="text-xs text-slate-500 mt-1 truncate max-w-[150px] lg:max-w-[200px]">
+                                            <div className="text-xs text-slate-500 mt-1 truncate max-w-37.5 lg:max-w-50">
                                                 {r.ProductName || ""}
                                             </div>
                                         </td>
@@ -199,7 +199,7 @@ export default function ReportList() {
                                                 className="text-[10px] md:text-xs"
                                             />
                                             {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
-                                                <div className="text-[9px] md:text-[10px] text-slate-400 mt-1 font-medium italic max-w-[120px] md:max-w-[150px] mx-auto leading-tight">
+                                                <div className="text-[9px] md:text-[10px] text-slate-400 mt-1 font-medium italic max-w-30 md:max-w-37.5 mx-auto leading-tight">
                                                     Chờ: {r.PendingDepts}
                                                 </div>
                                             )}
@@ -248,7 +248,7 @@ export default function ReportList() {
                             <option value={50}>50</option>
                             <option value={100}>100</option>
                         </select>
-                        <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-slate-500 -ml-1 mt-0.5 pointer-events-none"></div>
+                        <div className="w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-slate-500 -ml-1 mt-0.5 pointer-events-none"></div>
                     </div>
 
                     {/* Status Text */}
@@ -287,4 +287,4 @@ export default function ReportList() {
         </div>
     );
 }
-
+
