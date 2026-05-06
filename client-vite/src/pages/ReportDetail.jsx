@@ -1112,6 +1112,10 @@ export default function ReportDetail() {
                                                         label="Mã Kế hoạch ERP"
                                                         value={r.SourcePlanNo}
                                                     />
+                                                    <Field
+                                                        label="Bộ phận xảy ra lỗi"
+                                                        value={r.OccurredDepartmentName}
+                                                    />
 
                                                     {/* Hiển thị chi phí của đơn vị tạo (nếu có) */}
                                                     {r.HasCost && data.costLines?.some(c => c.DepartmentCode === r.CreatedByDeptCode || c.DepartmentCode === r.ResponsibleDeptCode && !data.responses?.some(resp => resp.DepartmentCode === c.DepartmentCode)) && (
