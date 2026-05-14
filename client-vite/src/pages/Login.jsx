@@ -119,9 +119,9 @@ export default function Login() {
                         )}
                     </button>
 
-                    <div className="text-center mt-6 text-sm text-slate-500 font-medium">
+                    {/* <div className="text-center mt-6 text-sm text-slate-500 font-medium">
                         Không dùng cho máy tính công cộng. Hệ thống tự động theo dõi IP truy cập.
-                    </div>
+                    </div> */}
 
                 </form>
             </div>
