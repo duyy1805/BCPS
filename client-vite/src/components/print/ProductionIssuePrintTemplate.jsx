@@ -188,7 +188,7 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                     <tbody>
                         <tr>
                             <td style={{ ...styles.headerCell, width: "15%" }}>
-                                <img src="/logo.png" alt="Z76 Logo" style={{ height: "60px" }} />
+                                <img src="/logo.png " alt="Z76 Logo" style={{ height: "60px" }} />
                             </td>
                             <td style={{ ...styles.headerCell, width: "12%" }}>
                                 <div style={styles.qrCode}>
@@ -277,7 +277,7 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                                     <td style={styles.td}>{resp.DepartmentName}</td>
                                     <td style={styles.td}>{resp.ResponderEmpName}</td>
                                     <td style={styles.td}>{resp.ResponseContent}</td>
-                                    <td style={styles.tdCenter}>{resp.RespondedAt ? new Date(resp.RespondedAt).toLocaleString('vi-VN') : ''}</td>
+                                    <td style={styles.tdCenter}>{resp.ResponseAt ? new Date(resp.ResponseAt).toLocaleString('vi-VN') : ''}</td>
                                 </tr>
                             ))
                         ) : (
