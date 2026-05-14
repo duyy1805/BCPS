@@ -5,6 +5,7 @@ import api, { formatMoney, formatInputNumber, parseInputNumber } from '../utils/
 import { useUI } from '../context/UIContext';
 import { cn } from '../context/UIContext';
 import SearchSelect from '../components/ui/SearchSelect';
+import StaticSelect from '../components/ui/StaticSelect';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
 export default function ReportCreate() {
@@ -274,15 +275,15 @@ export default function ReportCreate() {
                         </div>
 
                         {erpPlans.length > 0 && (
-                            <select
-                                onChange={e => setSelectedPlan(erpPlans.find(p => p.PlanSelectKey === e.target.value))}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-xl mb-4 bg-slate-50 outline-none focus:border-blue-500 text-sm"
-                            >
-                                <option value="">-- Chọn dòng kế hoạch phù hợp --</option>
-                                {erpPlans.map(p => (
-                                    <option key={p.PlanSelectKey} value={p.PlanSelectKey}>{p.DisplayText}</option>
-                                ))}
-                            </select>
+                            <StaticSelect
+                                placeholder="-- Chọn dòng kế hoạch phù hợp --"
+                                options={erpPlans}
+                                valueField="PlanSelectKey"
+                                labelField="DisplayText"
+                                value={selectedPlan?.PlanSelectKey}
+                                onSelect={plan => setSelectedPlan(plan)}
+                                className="mb-4"
+                            />
                         )}
 
                         {selectedPlan && (
@@ -307,21 +308,34 @@ export default function ReportCreate() {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                 <div>
                                     <label className="block text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-2">Loại phát sinh</label>
-                                    <select value={form.typeId} onChange={e => setForm({ ...form, typeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold">
-                                        {masterData.exceptionTypes.map(t => <option key={t.ExceptionTypeID} value={t.ExceptionTypeID}>{t.ExceptionTypeName}</option>)}
-                                    </select>
+                                    <StaticSelect
+                                        options={masterData.exceptionTypes}
+                                        valueField="ExceptionTypeID"
+                                        labelField="ExceptionTypeName"
+                                        value={form.typeId}
+                                        onSelect={opt => setForm({ ...form, typeId: opt?.ExceptionTypeID })}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-2">Nguyên nhân</label>
-                                    <select value={form.causeId} onChange={e => setForm({ ...form, causeId: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold">
-                                        {masterData.exceptionCauses.map(c => <option key={c.ExceptionCauseID} value={c.ExceptionCauseID}>{c.ExceptionCauseName}</option>)}
-                                    </select>
+                                    <StaticSelect
+                                        options={masterData.exceptionCauses}
+                                        valueField="ExceptionCauseID"
+                                        labelField="ExceptionCauseName"
+                                        value={form.causeId}
+                                        onSelect={opt => setForm({ ...form, causeId: opt?.ExceptionCauseID })}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-2">Mức độ ảnh hưởng (*)</label>
-                                    <select value={form.severityCode} onChange={e => setForm({ ...form, severityCode: e.target.value })} className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 font-bold text-blue-600 text-sm">
-                                        {masterData.severities.map(s => <option key={s.SeverityCode} value={s.SeverityCode}>{s.SeverityName}</option>)}
-                                    </select>
+                                    <StaticSelect
+                                        options={masterData.severities}
+                                        valueField="SeverityCode"
+                                        labelField="SeverityName"
+                                        value={form.severityCode}
+                                        onSelect={opt => setForm({ ...form, severityCode: opt?.SeverityCode })}
+                                        valueClassName="text-blue-600"
+                                    />
                                 </div>
                             </div>
 
