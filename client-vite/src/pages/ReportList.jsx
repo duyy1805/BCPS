@@ -139,6 +139,7 @@ export default function ReportList() {
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Mã BCPS / Ngày</th>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm hidden sm:table-cell">Lệnh SX / Mã hàng</th>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Loại phát sinh</th>
+                                <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Người tạo</th>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm hidden lg:table-cell">Bộ phận chịu TN</th>
                                 <th className="p-4 md:p-5 text-right font-bold tracking-wide text-xs md:text-sm hidden md:table-cell">Tổng CP (VNĐ)</th>
                                 <th className="p-4 md:p-5 text-center font-bold tracking-wide text-xs md:text-sm">Trạng thái</th>
@@ -149,7 +150,7 @@ export default function ReportList() {
                             {loading ? (
                                 <tr>
                                     <td
-                                        colSpan="7"
+                                        colSpan="8"
                                         className="p-12 text-center text-slate-500 font-medium"
                                     >
                                         Đang tải danh sách báo cáo...
@@ -186,6 +187,9 @@ export default function ReportList() {
                                                 {r.HasCost ? formatMoney(r.EstimatedTotalCost) : ""}
                                             </div>
                                         </td>
+                                        <td className="p-4 md:p-5 font-medium text-slate-700 text-sm">
+                                            {r.CreatedByEmpName}
+                                        </td>
                                         <td className="p-4 md:p-5 font-medium text-slate-700 text-sm hidden lg:table-cell">
                                             {r.ResponsibleDeptName || r.ResponsibleDeptCode}
                                         </td>
@@ -217,7 +221,7 @@ export default function ReportList() {
                             ) : (
                                 <tr>
                                     <td
-                                        colSpan="7"
+                                        colSpan="8"
                                         className="p-12 text-center text-slate-500 font-medium tracking-wide"
                                     >
                                         Không tìm thấy báo cáo nào phù hợp.
