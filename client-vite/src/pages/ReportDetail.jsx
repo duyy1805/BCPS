@@ -20,7 +20,11 @@ import {
     Paperclip,
     Download,
     Eye,
+    Printer,
 } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
+import { ProductionIssuePrintTemplate } from "../components/print/ProductionIssuePrintTemplate";
+
 import api, {
     formatDate,
     formatMoney,
@@ -42,6 +46,13 @@ export default function ReportDetail() {
     const [actions, setActions] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("overview");
+
+    // ── Print Logic ─────────────────────────────────────────────
+    const printRef = React.useRef();
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: `BCPS_${data?.report?.ReportNo || "Report"}`,
+    });
 
     // ── Response Modal ──────────────────────────────────────────
     const [showRespModal, setShowRespModal] = useState(false);
@@ -666,8 +677,17 @@ export default function ReportDetail() {
                             <Archive className="w-4 h-4 mr-2" /> Xác Nhận &amp; Đóng
                         </button>
                     )}
+
+                    {/* Nút In báo cáo (Luôn hiển thị nếu có dữ liệu) */}
+                    <button
+                        onClick={handlePrint}
+                        className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-800 hover:bg-slate-900 text-white shadow-slate-200"
+                    >
+                        <Printer className="w-4 h-4 mr-2" /> In Báo Cáo
+                    </button>
                 </div>
             </div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Content */}
@@ -1864,9 +1884,14 @@ export default function ReportDetail() {
                     </div>
                 </div>
             )}
+            {/* --- Hidden Print Template --- */}
+            <div style={{ display: "none" }}>
+                <ProductionIssuePrintTemplate ref={printRef} data={data} />
+            </div>
         </div>
     );
 }
+
 
 function Field({ label, value }) {
     return (
@@ -1891,3 +1916,5 @@ function Card({ label, value, icon: Icon }) {
         </div>
     );
 }
+
+

@@ -596,7 +596,7 @@ export default function ReportCreate() {
 
                     {/* File Upload */}
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 className="text-sm font-bold text-slate-800 mb-2">Đính kèm minh chứng</h3>
+                        <h3 className="text-sm font-bold text-slate-800 mb-2">Đính kèm tệp tin</h3>
                         <input type="file" onChange={e => setFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                     </div>
                 </div>
