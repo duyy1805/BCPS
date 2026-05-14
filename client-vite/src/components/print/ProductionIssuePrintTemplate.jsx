@@ -142,11 +142,15 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
     // 1. Reporter
     const reporterName = report.CreatedByEmpName;
 
-    // 2. VT Manager
+    // 2. KHO Manager
+    const khoApprover = approvals?.find(a => a.ApprovalRoleCode === 'KHO_MANAGER' && a.DecisionCode !== 'PENDING')
+        || approvals?.find(a => a.ApprovalRoleCode === 'KHO_MANAGER');
+
+    // 3. VT Manager
     const vtApprover = approvals?.find(a => a.ApprovalRoleCode === 'VT_MANAGER' && a.DecisionCode !== 'PENDING')
         || approvals?.find(a => a.ApprovalRoleCode === 'VT_MANAGER');
 
-    // 3. BGD
+    // 4. BGD
     const bgdApprover = approvals?.find(a => a.ApprovalRoleCode === 'BGD' && a.DecisionCode !== 'PENDING')
         || approvals?.find(a => a.ApprovalRoleCode === 'BGD');
 
@@ -351,7 +355,14 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                             <div style={{ fontWeight: "bold" }}>{reporterName}</div>
                         </div>
 
-                        {/* Signature 2: VT Manager (or VP in case of No Cost) */}
+                        {/* Signature 2: KHO Manager */}
+                        <div style={styles.signatureBox}>
+                            <div style={{ fontWeight: "bold", textTransform: "uppercase", marginBottom: "60px" }}>Phụ trách kho vận</div>
+                            {khoApprover?.DecisionCode === 'APPROVED' && <div style={styles.stamp}>Đã Ký</div>}
+                            <div style={{ fontWeight: "bold" }}>{khoApprover?.ApproverEmpName || ''}</div>
+                        </div>
+
+                        {/* Signature 3: VT Manager (or VP in case of No Cost) */}
                         <div style={styles.signatureBox}>
                             <div style={{ fontWeight: "bold", textTransform: "uppercase", marginBottom: "60px" }}>
                                 {hasActualCost ? "Trưởng phòng Vật tư" : "Phòng Vật tư"}
@@ -360,7 +371,7 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                             <div style={{ fontWeight: "bold" }}>{vtApprover?.ApproverEmpName || ''}</div>
                         </div>
 
-                        {/* Signature 3: BGD (Only if Has Cost) */}
+                        {/* Signature 4: BGD (Only if Has Cost) */}
                         {hasActualCost && (
                             <div style={styles.signatureBox}>
                                 <div style={{ fontWeight: "bold", textTransform: "uppercase", marginBottom: "60px" }}>Ban Giám đốc</div>

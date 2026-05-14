@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { clearStoredAuth, getStoredToken } from './authStorage';
 
-const API_URL = import.meta.env.VITE_API_URL || "https://apibcps.z76.vn/api";
+const API_URL = import.meta.env.VITE_API_URL || 'https://apibcps.z76.vn/api';
 // const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
 
 const api = axios.create({
@@ -12,13 +13,13 @@ const api = axios.create({
 
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('jwt_token');
+        const token = getStoredToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -27,16 +28,13 @@ api.interceptors.response.use(
         // Chỉ tự động logout khi token hết hạn hoặc không hợp lệ (401)
         // Lỗi 403 (Forbidden) có thể do không có quyền xem bản ghi cụ thể, không nên logout user
         if (error.response && error.response.status === 401) {
-            localStorage.removeItem('jwt_token');
-            localStorage.removeItem('user_name');
-            localStorage.removeItem('emp_code');
-            localStorage.removeItem('department_code');
+            clearStoredAuth();
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
         }
         return Promise.reject(error);
-    }
+    },
 );
 
 export const formatMoney = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
@@ -63,7 +61,7 @@ export const parseInputNumber = (val) => {
 };
 
 export const getFileBaseUrl = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
     return apiUrl.replace('/api', ''); // Xóa '/api' ở cuối để thành http://localhost:5002
 };
 

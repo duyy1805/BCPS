@@ -481,7 +481,7 @@ export default function ReportCreate() {
                         </label>
                         <div className={cn("mt-4 p-3 rounded-lg text-sm font-bold flex items-start gap-2", form.hasCost ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-cyan-50 text-cyan-700 border border-cyan-200')}>
                             {form.hasCost ? <AlertCircle className="w-5 h-5 shrink-0" /> : <Info className="w-4 h-4 shrink-0 mt-0.5" />}
-                            {form.hasCost ? 'Báo cáo CÓ CHI PHÍ sẽ do BAN GIÁM ĐỐC phê duyệt.' : 'Báo cáo KHÔNG chi phí sẽ được Trưởng phòng Vật tư duyệt.'}
+                            {form.hasCost ? 'Báo cáo CÓ CHI PHÍ sẽ qua Phụ trách kho vận, Trưởng phòng Vật tư rồi Ban Giám đốc phê duyệt.' : 'Báo cáo KHÔNG chi phí sẽ qua Phụ trách kho vận rồi Trưởng phòng Vật tư duyệt.'}
                         </div>
 
                         {form.hasCost && (

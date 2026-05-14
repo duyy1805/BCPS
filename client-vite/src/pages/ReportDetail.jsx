@@ -171,19 +171,21 @@ export default function ReportDetail() {
                     console.warn("Could not load actions:", err);
                 }
 
-                // Restriction logic cho VT_MANAGER và BGD
+                // Restriction logic cho KHO_MANAGER, VT_MANAGER và BGD
                 // Cho phép xem nếu:
                 // 1. Họ là người tạo (Reporter)
                 // 2. Họ có quyền xử lý hiện tại (CanApprove/CanForwardBGD/CanClose)
                 // 3. Họ nằm trong danh sách phê duyệt (đã phê duyệt hoặc sẽ phê duyệt)
                 // 4. Họ có trong lịch sử xử lý (đã từng thao tác)
                 const roles = user?.roles || [];
-                const isManagerOrBGD =
-                    roles.includes("VT_MANAGER") || roles.includes("BGD");
+                const isApprovalRole =
+                    roles.includes("KHO_MANAGER") ||
+                    roles.includes("VT_MANAGER") ||
+                    roles.includes("BGD");
                 const isReporter =
                     reportData.report?.CreatedByEmpCode === user?.empCode;
 
-                if (isManagerOrBGD && !isReporter) {
+                if (isApprovalRole && !isReporter) {
                     const canDoSomething =
                         actionData.CanApprove ||
                         actionData.CanForwardBGD ||
@@ -276,7 +278,9 @@ export default function ReportDetail() {
                 ? "Trả lại bổ sung"
                 : decision === "REJECTED"
                     ? "Từ chối"
-                    : "Phê duyệt";
+                    : decision === "FORWARD_BGD"
+                        ? "Trình Ban giám đốc"
+                        : "Phê duyệt";
         const note = await prompt(
             `Xác nhận ${actionName}`,
             `Nhập ghi chú cho hành động [${actionName}]...`,
@@ -288,7 +292,7 @@ export default function ReportDetail() {
             () =>
                 api.post(`/reports/${id}/approval-decision`, {
                     decisionCode: decision,
-                    decisionComment: note || "Phê duyệt hồ sơ",
+                    decisionComment: note || (decision === "FORWARD_BGD" ? "Trình Ban giám đốc" : "Phê duyệt hồ sơ"),
                 }),
             `Thao tác ${actionName} thành công!`,
         );

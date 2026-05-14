@@ -22,10 +22,12 @@ export default function ReportList() {
         setLoading(true);
         try {
             const roles = user?.roles || [];
-            const isManagerOrBGD =
-                roles.includes("VT_MANAGER") || roles.includes("BGD");
+            const isApprovalRole =
+                roles.includes("KHO_MANAGER") ||
+                roles.includes("VT_MANAGER") ||
+                roles.includes("BGD");
             const onlyPending =
-                isManagerOrBGD && onlyMyPending ? "&onlyNeedMyApproval=true" : "";
+                isApprovalRole && onlyMyPending ? "&onlyNeedMyApproval=true" : "";
 
             const query = `?pageNumber=${pageNum}&pageSize=${pageSize}&keyword=${encodeURIComponent(keyword)}&statusCode=${status}${onlyPending}`;
             const { data } = await api.get(`/reports${query}`);
@@ -98,7 +100,8 @@ export default function ReportList() {
                             </select>
                         </div>
 
-                        {(user?.roles?.includes("VT_MANAGER") ||
+                        {(user?.roles?.includes("KHO_MANAGER") ||
+                            user?.roles?.includes("VT_MANAGER") ||
                             user?.roles?.includes("BGD")) && (
                                 <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-white transition-all shadow-sm shrink-0">
                                     <input
@@ -196,17 +199,19 @@ export default function ReportList() {
                                         <td className="p-4 md:p-5 text-right font-bold text-red-600 text-sm hidden md:table-cell">
                                             {r.HasCost ? formatMoney(r.EstimatedTotalCost) : "-"}
                                         </td>
-                                        <td className="p-4 md:p-5 text-center whitespace-nowrap">
-                                            <StatusBadge
-                                                status={r.StatusCode}
-                                                text={r.DynamicCurrentStep}
-                                                className="text-[10px] md:text-xs"
-                                            />
-                                            {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
-                                                <div className="text-[9px] md:text-[10px] text-slate-400 mt-1 font-medium italic max-w-30 md:max-w-37.5 mx-auto leading-tight">
-                                                    Chờ: {r.PendingDepts}
-                                                </div>
-                                            )}
+                                        <td className="p-4 md:p-5 text-center align-middle">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <StatusBadge
+                                                    status={r.StatusCode}
+                                                    text={r.DynamicCurrentStep}
+                                                    className="inline-flex justify-center text-[10px] md:text-xs"
+                                                />
+                                                {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
+                                                    <div className="w-full max-w-56 text-center text-[9px] md:text-[10px] text-slate-400 font-medium italic leading-tight whitespace-normal break-words">
+                                                        Chờ: {r.PendingDepts}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="p-4 md:p-5 text-center">
                                             <Link

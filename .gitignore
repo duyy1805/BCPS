@@ -7,8 +7,9 @@ dist/
 build/
 
 full.docx
-erpint.sql
-ps.sql
+
 
 uploads
-update_business_logic_v3.sql
+
+
+*.sql

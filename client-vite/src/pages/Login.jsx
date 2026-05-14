@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import api from '../utils/api';
+import { getRememberedUsername, setRememberedUsername } from '../utils/authStorage';
 import { AlertTriangle, Lock, User, ArrowRight } from 'lucide-react';
 
 export default function Login() {
     const { login } = useAuth();
     const { showToast } = useUI();
     const [loading, setLoading] = useState(false);
+    const rememberedUsername = getRememberedUsername();
     const [formData, setFormData] = useState({
-        username: '',
-        password: ''
+        username: rememberedUsername,
+        password: '',
+        rememberMe: true
     });
 
     const handleSubmit = async (e) => {
@@ -20,6 +23,7 @@ export default function Login() {
             const { data } = await api.post('/auth/login', formData);
             if (data.success) {
                 console.log(data.data.user)
+                setRememberedUsername(formData.rememberMe ? formData.username : '');
                 showToast('Đăng nhập thành công!', 'success');
                 login({
                     token: data.data.token,
@@ -27,6 +31,7 @@ export default function Login() {
                     empCode: data.data.user.employeeCode,
                     deptCode: data.data.user.departmentCode,
                     roles: data.data.user.roles,
+                    rememberMe: formData.rememberMe,
                 });
             } else {
                 showToast(data.message || 'Đăng nhập thất bại', 'error');
@@ -67,7 +72,7 @@ export default function Login() {
                                 value={formData.username}
                                 onChange={e => setFormData({ ...formData, username: e.target.value })}
                                 className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-medium"
-                                placeholder="Nhập mã nhân viên hoặc username"
+                                placeholder="Sử dụng tài khoản ERP"
                             />
                         </div>
                     </div>
@@ -88,7 +93,18 @@ export default function Login() {
                             />
                         </div>
                     </div>
-
+                    <label className="flex items-center gap-3 text-sm text-slate-600 font-medium select-none cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={formData.rememberMe}
+                            onChange={e => {
+                                if (!e.target.checked) setRememberedUsername('');
+                                setFormData({ ...formData, rememberMe: e.target.checked });
+                            }}
+                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>Ghi nhớ đăng nhập</span>
+                    </label>
                     <button
                         type="submit"
                         disabled={loading}
@@ -106,6 +122,7 @@ export default function Login() {
                     <div className="text-center mt-6 text-sm text-slate-500 font-medium">
                         Không dùng cho máy tính công cộng. Hệ thống tự động theo dõi IP truy cập.
                     </div>
+
                 </form>
             </div>
         </div>

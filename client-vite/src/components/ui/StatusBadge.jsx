@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../../context/UIContext';
 
-export default function StatusBadge({ status, text }) {
+export default function StatusBadge({ status, text, className }) {
     const config = {
         'DRAFT': { label: 'Nháp', className: 'bg-slate-100 text-slate-700 border-slate-200' },
         'WAITING_FEEDBACK': { label: 'Chờ phản hồi', className: 'bg-orange-50 text-orange-700 border-orange-200' },
@@ -14,7 +14,7 @@ export default function StatusBadge({ status, text }) {
     const current = config[status] || { label: status, className: 'bg-slate-100 text-slate-700 border-slate-200' };
 
     return (
-        <span className={cn("px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-full border shadow-sm whitespace-nowrap", current.className)}>
+        <span className={cn("px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-full border shadow-sm whitespace-nowrap", current.className, className)}>
             {text || current.label}
         </span>
     );
