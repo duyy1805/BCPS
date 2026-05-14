@@ -188,7 +188,7 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                     <tbody>
                         <tr>
                             <td style={{ ...styles.headerCell, width: "15%" }}>
-                                <img src="/logo.png " alt="Z76 Logo" style={{ height: "60px" }} />
+                                <img src="/logo.png" alt="Z76 Logo" style={{ height: "60px" }} />
                             </td>
                             <td style={{ ...styles.headerCell, width: "12%" }}>
                                 <div style={styles.qrCode}>
