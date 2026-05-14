@@ -10,6 +10,7 @@ const sqlConfig = {
     pool: env.db.pool,
     options: {
         trustServerCertificate: env.db.trustServerCertificate,
+        useUTC: false,
         enableArithAbort: true
     }
 };
