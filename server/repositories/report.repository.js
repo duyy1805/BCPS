@@ -34,7 +34,7 @@ class ReportRepository extends DbRepository {
             { name: "ImpactCodesCsv", type: sql.NVarChar(500), value: nv(params.impactCodesCsv) },
             { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: params.coordDepartmentCodesCsv || null },
             { name: "OccurredDeptCode_NT", type: sql.NVarChar(250), value: params.occurredDeptCode_NT || null },
-            { name: "OccurredDeptName_NT", type: sql.NVarChar(250), value: params.occurredDeptCode_NT || null },
+            // { name: "OccurredDeptName_NT", type: sql.NVarChar(250), value: params.occurredDeptCode_NT || null },
             { name: "ActionByEmpCode", type: sql.VarChar(50), value: params.actionByEmpCode }
         ]);
     }
