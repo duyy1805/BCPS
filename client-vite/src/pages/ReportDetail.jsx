@@ -1524,18 +1524,20 @@ export default function ReportDetail() {
                                             {user?.unitName} ({user?.deptCode})
                                         </div>
                                     ) : (
-                                        <select
-                                            value={respForm.departmentCode}
-                                            onChange={(e) => setRespForm({ ...respForm, departmentCode: e.target.value })}
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
-                                        >
-                                            <option value="">-- Chọn bộ phận phối hợp --</option>
-                                            {data?.coordDepartments?.map(dept => (
-                                                <option key={dept.DepartmentCode} value={dept.DepartmentCode}>
-                                                    {dept.DepartmentName || dept.DepartmentCode}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <SearchSelect
+                                            placeholder="Chọn bộ phận phản hồi..."
+                                            apiPath="/departments"
+                                            valueField="DepartmentCode"
+                                            labelField="DepartmentName"
+                                            subLabelField="DepartmentCode"
+                                            initialValue={respForm.departmentCode}
+                                            onSelect={(dept) =>
+                                                setRespForm({
+                                                    ...respForm,
+                                                    departmentCode: dept?.DepartmentCode || "",
+                                                })
+                                            }
+                                        />
                                     )}
                                 </div>
                                 <div className="flex flex-col justify-end pb-1">
