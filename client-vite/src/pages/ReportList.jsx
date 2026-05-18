@@ -177,11 +177,21 @@ export default function ReportList() {
                                             </div>
                                         </td>
                                         <td className="p-4 md:p-5 hidden sm:table-cell">
-                                            <div className="font-bold text-slate-700 text-sm">
-                                                {r.OrderCode || "N/A"}
-                                            </div>
-                                            <div className="text-xs text-slate-500 mt-1 truncate max-w-37.5 lg:max-w-50">
-                                                {r.ProductName || ""}
+                                            <div className="space-y-1">
+                                                {(r.Plans || []).length > 0 ? (
+                                                    r.Plans.map((plan) => (
+                                                        <div key={plan.PlanSelectKey} className="leading-tight">
+                                                            <div className="font-bold text-slate-700 text-sm">
+                                                                {plan.OrderCode || plan.PlanNo || "N/A"}
+                                                            </div>
+                                                            <div className="text-xs text-slate-500 truncate max-w-37.5 lg:max-w-50" title={plan.ProductName}>
+                                                                {plan.ProductName || plan.PlanNo || ""}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-sm text-slate-400 italic">Không gắn ERP</div>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="p-4 md:p-5 font-medium text-slate-700 text-sm">

@@ -8,7 +8,7 @@ import { QRCodeSVG } from "qrcode.react";
 export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => {
     if (!data || !data.report) return null;
 
-    const { report, responses, approvals, costLines } = data;
+    const { report, responses, approvals, costLines, plans = [] } = data;
 
     // Helpers
     const formatPrintDate = (dateStr) => {
@@ -246,11 +246,11 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                         <tr>
                             <td style={styles.tdCenter}>1</td>
                             <td style={styles.td}>{report.OccurredDeptName_NT || report.OccurredDepartmentName || '...'}</td>
-                            <td style={styles.td}>{report.OrderCode || '...'}</td>
-                            <td style={styles.tdCenter}>{report.ProductCode || '0'}</td>
-                            <td style={styles.td}>{report.ProductName || '...'}</td>
+                            <td style={styles.td}>{plans.map((plan) => plan.OrderCode).filter(Boolean).join(", ") || '...'}</td>
+                            <td style={styles.tdCenter}>{plans.map((plan) => plan.ProductCode).filter(Boolean).join(", ") || '...'}</td>
+                            <td style={styles.td}>{plans.map((plan) => plan.ProductName).filter(Boolean).join(", ") || '...'}</td>
                             <td style={styles.td}>{report.DetailedDescription || '...'}</td>
-                            <td style={styles.tdCenter}>{report.PlanQty || '...'}</td>
+                            <td style={styles.tdCenter}>{plans.map((plan) => plan.PlanQty).filter((value) => value !== null && value !== undefined).join(", ") || '...'}</td>
                             <td style={styles.td}>{report.ExceptionCauseName || '...'}</td>
                             <td style={styles.td}>{report.ProposedSolution || '...'}</td>
                             <td style={styles.td}>{report.InterimAction || '...'}</td>
@@ -258,6 +258,44 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                             <td style={styles.td}>{report.MainResponsibleEmpName || '...'}</td>
                             <td style={styles.td}>{report.ClosureNote || ''}</td>
                         </tr>
+                    </tbody>
+                </table>
+
+                <div style={styles.sectionTitle}>Danh sách kế hoạch ERP liên quan</div>
+                <table style={styles.table}>
+                    <thead>
+                        <tr>
+                            <th style={styles.th}>TT</th>
+                            <th style={styles.th}>Mã kế hoạch</th>
+                            <th style={styles.th}>Đơn hàng</th>
+                            <th style={styles.th}>Sản phẩm</th>
+                            <th style={styles.th}>ItemCode</th>
+                            <th style={styles.th}>Công đoạn</th>
+                            <th style={styles.th}>Bộ phận</th>
+                            <th style={styles.th}>Ngày KH</th>
+                            <th style={styles.th}>Số lượng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {plans.length > 0 ? plans.map((plan, idx) => (
+                            <tr key={plan.PlanSelectKey || idx}>
+                                <td style={styles.tdCenter}>{idx + 1}</td>
+                                <td style={styles.td}>{plan.PlanNo || plan.PlanID || '...'}</td>
+                                <td style={styles.td}>{plan.OrderCode || '...'}</td>
+                                <td style={styles.td}>{plan.ProductName || '...'}</td>
+                                <td style={styles.td}>{plan.ProductCode || '...'}</td>
+                                <td style={styles.td}>{plan.OperationName || plan.OperationCode || '...'}</td>
+                                <td style={styles.td}>{plan.DepartmentName || '...'}</td>
+                                <td style={styles.tdCenter}>{plan.PlanDate ? new Date(plan.PlanDate).toLocaleDateString('vi-VN') : '...'}</td>
+                                <td style={styles.tdCenter}>{plan.PlanQty ?? '...'}</td>
+                            </tr>
+                        )) : (
+                            <tr>
+                                <td colSpan={9} style={{ ...styles.tdCenter, fontStyle: "italic", color: "#666" }}>
+                                    Không gắn kế hoạch ERP
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
 

@@ -216,6 +216,149 @@ class ReportRepository extends DbRepository {
         };
     }
 
+    async syncPlans(reportId, planSelectKeys, actionByEmpCode) {
+        const keys = Array.isArray(planSelectKeys) ? planSelectKeys : [];
+        return this.query(
+            `
+            SET NOCOUNT ON;
+            SET XACT_ABORT ON;
+
+            BEGIN TRY
+                BEGIN TRAN;
+
+                DECLARE @OldKeys NVARCHAR(MAX);
+                SELECT @OldKeys =
+                    STUFF
+                    (
+                        (
+                            SELECT N', ' + rp.PlanSelectKey
+                            FROM ps.ReportPlan rp
+                            WHERE rp.ReportID = @ReportID
+                            ORDER BY rp.PlanSelectKey
+                            FOR XML PATH(''), TYPE
+                        ).value('.', 'NVARCHAR(MAX)'),
+                        1,
+                        2,
+                        N''
+                    );
+
+                DELETE FROM ps.ReportPlan
+                WHERE ReportID = @ReportID;
+
+                ;WITH requested AS
+                (
+                    SELECT DISTINCT LTRIM(RTRIM([value])) AS PlanSelectKey
+                    FROM OPENJSON(@PlanSelectKeysJson)
+                    WHERE NULLIF(LTRIM(RTRIM([value])), '') IS NOT NULL
+                ),
+                parsed AS
+                (
+                    SELECT
+                        PlanSelectKey,
+                        CHARINDEX('|', PlanSelectKey) AS p1,
+                        CHARINDEX('|', PlanSelectKey, CHARINDEX('|', PlanSelectKey) + 1) AS p2,
+                        CHARINDEX('|', PlanSelectKey, CHARINDEX('|', PlanSelectKey, CHARINDEX('|', PlanSelectKey) + 1) + 1) AS p3
+                    FROM requested
+                ),
+                normalized AS
+                (
+                    SELECT
+                        PlanSelectKey,
+                        SUBSTRING(PlanSelectKey, 1, p1 - 1) AS PlanID,
+                        SUBSTRING(PlanSelectKey, p1 + 1, p2 - p1 - 1) AS ProductCode,
+                        SUBSTRING(PlanSelectKey, p2 + 1, p3 - p2 - 1) AS OperationCode,
+                        SUBSTRING(PlanSelectKey, p3 + 1, LEN(PlanSelectKey) - p3) AS DepartmentCode
+                    FROM parsed
+                    WHERE p1 > 0 AND p2 > p1 AND p3 > p2
+                )
+                INSERT INTO ps.ReportPlan
+                (
+                    ReportID, PlanSelectKey, PlanID, PlanNo, OrderCode, ProductCode, ProductName,
+                    OperationCode, OperationName, DepartmentCode, DepartmentName,
+                    WorkshopCode, WorkshopName, PlanDate, PlanQty, Uom, ERPPlanStatus
+                )
+                SELECT
+                    @ReportID,
+                    n.PlanSelectKey,
+                    p.PlanID,
+                    p.PlanNo,
+                    p.OrderCode,
+                    p.ProductCode,
+                    p.ProductName,
+                    p.OperationCode,
+                    p.OperationName,
+                    p.DepartmentCode,
+                    p.DepartmentName,
+                    p.UnitCode,
+                    p.UnitName,
+                    p.PlanDate,
+                    p.PlanQty,
+                    p.Uom,
+                    p.PlanStatus
+                FROM normalized n
+                INNER JOIN erpint.vw_ProductionPlan p
+                    ON p.PlanID = n.PlanID
+                   AND p.ProductCode = n.ProductCode
+                   AND p.OperationCode = n.OperationCode
+                   AND p.DepartmentCode = n.DepartmentCode;
+
+                IF (SELECT COUNT(1) FROM OPENJSON(@PlanSelectKeysJson)) <> (SELECT COUNT(1) FROM ps.ReportPlan WHERE ReportID = @ReportID)
+                    THROW 56001, N'Có kế hoạch ERP không hợp lệ hoặc bị trùng.', 1;
+
+                DECLARE @NewKeys NVARCHAR(MAX);
+                SELECT @NewKeys =
+                    STUFF
+                    (
+                        (
+                            SELECT N', ' + rp.PlanSelectKey
+                            FROM ps.ReportPlan rp
+                            WHERE rp.ReportID = @ReportID
+                            ORDER BY rp.PlanSelectKey
+                            FOR XML PATH(''), TYPE
+                        ).value('.', 'NVARCHAR(MAX)'),
+                        1,
+                        2,
+                        N''
+                    );
+
+                IF ISNULL(@OldKeys, N'') <> ISNULL(@NewKeys, N'')
+                BEGIN
+                    INSERT INTO ps.ReportHistory
+                    (
+                        ReportID, ActionCode, ActionName, FromStatusCode, ToStatusCode,
+                        ActionByEmpCode, ActionByEmpName, ActionAt, Note
+                    )
+                    SELECT
+                        r.ReportID,
+                        CASE WHEN @OldKeys IS NULL THEN 'SET_PLANS' ELSE 'UPDATE_PLANS' END,
+                        CASE WHEN @OldKeys IS NULL THEN N'Gắn kế hoạch ERP' ELSE N'Cập nhật danh sách kế hoạch ERP' END,
+                        r.StatusCode,
+                        r.StatusCode,
+                        @ActionByEmpCode,
+                        e.EmployeeName,
+                        SYSDATETIME(),
+                        CONCAT(N'Từ: ', ISNULL(@OldKeys, N'(trống)'), N' | Thành: ', ISNULL(@NewKeys, N'(trống)'))
+                    FROM ps.Report r
+                    LEFT JOIN erpint.vw_Employee e
+                        ON e.EmployeeCode = @ActionByEmpCode
+                    WHERE r.ReportID = @ReportID;
+                END
+
+                COMMIT;
+            END TRY
+            BEGIN CATCH
+                IF @@TRANCOUNT > 0 ROLLBACK;
+                THROW;
+            END CATCH
+            `,
+            [
+                { name: "ReportID", type: sql.BigInt, value: reportId },
+                { name: "PlanSelectKeysJson", type: sql.NVarChar(sql.MAX), value: JSON.stringify(keys) },
+                { name: "ActionByEmpCode", type: sql.VarChar(50), value: actionByEmpCode }
+            ]
+        );
+    }
+
     async submit(reportId, empCode) {
         return this.executeStoredProcedure("ps.usp_Report_SubmitFull", [
             { name: "ReportID", type: sql.BigInt, value: reportId },
@@ -238,6 +381,16 @@ class ReportRepository extends DbRepository {
         const approvals = result.recordsets[5];
         const attachments = result.recordsets[6];
         const history = result.recordsets[7];
+        const planResult = await this.query(
+            `
+            SELECT *
+            FROM ps.ReportPlan
+            WHERE ReportID = @ReportID
+            ORDER BY PlanDate DESC, PlanNo;
+            `,
+            [{ name: "ReportID", type: sql.BigInt, value: id }]
+        );
+        const plans = planResult.recordset || [];
 
         return {
             report: {
@@ -251,7 +404,8 @@ class ReportRepository extends DbRepository {
             costLines,
             approvals,
             attachments,
-            history
+            history,
+            plans
         };
     }
 
@@ -354,6 +508,21 @@ class ReportRepository extends DbRepository {
             { name: "SortColumn", type: sql.VarChar(50), value: params.sortColumn || "CreatedAt" },
             { name: "SortDirection", type: sql.VarChar(4), value: params.sortDirection || "DESC" }
         ]);
+    }
+
+    async getPlansForReports(reportIds) {
+        if (!Array.isArray(reportIds) || reportIds.length === 0) return [];
+        return this.query(
+            `
+            SELECT *
+            FROM ps.ReportPlan
+            WHERE ReportID IN (SELECT TRY_CAST([value] AS BIGINT) FROM OPENJSON(@ReportIdsJson))
+            ORDER BY ReportID, PlanDate DESC, PlanNo;
+            `,
+            [
+                { name: "ReportIdsJson", type: sql.NVarChar(sql.MAX), value: JSON.stringify(reportIds) }
+            ]
+        );
     }
 
     async addAttachment(params) {

@@ -24,7 +24,7 @@ export default function ReportCreate() {
 
     const [erpSearch, setErpSearch] = useState('');
     const [erpPlans, setErpPlans] = useState([]);
-    const [selectedPlan, setSelectedPlan] = useState(null);
+    const [selectedPlans, setSelectedPlans] = useState([]);
     const [file, setFile] = useState(null);
     const [managedDepts, setManagedDepts] = useState([]);
 
@@ -138,6 +138,21 @@ export default function ReportCreate() {
         setForm(prev => ({ ...prev, coordDeptCodes: prev.coordDeptCodes.filter(c => c !== code) }));
     };
 
+    const addSelectedPlan = (plan) => {
+        if (!plan) return;
+        setSelectedPlans(prev => {
+            if (prev.some(item => item.PlanSelectKey === plan.PlanSelectKey)) {
+                showToast('Kế hoạch này đã được chọn', 'warning');
+                return prev;
+            }
+            return [...prev, plan];
+        });
+    };
+
+    const removeSelectedPlan = (planSelectKey) => {
+        setSelectedPlans(prev => prev.filter(plan => plan.PlanSelectKey !== planSelectKey));
+    };
+
     const addCostLine = () => {
         if (!costForm.costTypeId) return showToast('Vui lòng chọn Loại Chi Phí', 'warning');
         if (!costForm.costItemDesc) return showToast('Vui lòng nhập Mô tả khoản chi phí', 'warning');
@@ -171,7 +186,7 @@ export default function ReportCreate() {
         try {
             const body = {
                 reportId: null,
-                planSelectKey: selectedPlan?.PlanSelectKey || 0,
+                planSelectKeys: selectedPlans.map(plan => plan.PlanSelectKey),
                 occurrenceTime: new Date().toISOString(),
                 exceptionTypeId: Number(form.typeId),
                 exceptionCauseId: Number(form.causeId),
@@ -187,7 +202,7 @@ export default function ReportCreate() {
                 expectedResult: null,
                 dueDate: form.dueDate || null,
                 hasCost: form.hasCost,
-                affectsERP: Boolean(selectedPlan),
+                affectsERP: selectedPlans.length > 0,
                 impactCodesCsv: form.impactCodes.join(','),
                 coordDepartmentCodesCsv: form.coordDeptCodes.join(','),
                 occurredDeptCode_NT: form.occurredDeptCode_NT || null
@@ -279,17 +294,44 @@ export default function ReportCreate() {
                                 options={erpPlans}
                                 valueField="PlanSelectKey"
                                 labelField="DisplayText"
-                                value={selectedPlan?.PlanSelectKey}
-                                onSelect={plan => setSelectedPlan(plan)}
+                                value={null}
+                                onSelect={addSelectedPlan}
                                 className="mb-4"
                             />
                         )}
 
-                        {selectedPlan && (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 animate-in fade-in">
-                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Mã Đơn Hàng</div><div className="font-bold text-slate-900 text-sm">{selectedPlan.OrderCode}</div></div>
-                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Sản phẩm</div><div className="font-bold text-slate-900 text-sm truncate">{selectedPlan.ProductName}</div></div>
-                                <div><div className="text-[10px] font-bold text-slate-500 uppercase">Bộ phận</div><div className="font-bold text-slate-900 text-sm">{selectedPlan.DepartmentName}</div></div>
+                        {selectedPlans.length > 0 && (
+                            <div className="overflow-hidden rounded-xl border border-blue-100 bg-blue-50/30 animate-in fade-in">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-blue-50 text-[10px] uppercase tracking-wider text-slate-500">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left">Kế hoạch</th>
+                                            <th className="px-3 py-2 text-left">Đơn hàng</th>
+                                            <th className="px-3 py-2 text-left">Sản phẩm</th>
+                                            <th className="px-3 py-2 text-left">ItemCode</th>
+                                            <th className="px-3 py-2 text-left">Công đoạn</th>
+                                            <th className="px-3 py-2 text-left">Bộ phận</th>
+                                            <th className="px-3 py-2 text-right">Xóa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-blue-100">
+                                        {selectedPlans.map(plan => (
+                                            <tr key={plan.PlanSelectKey}>
+                                                <td className="px-3 py-2 font-bold text-slate-800">{plan.PlanNo || plan.PlanID}</td>
+                                                <td className="px-3 py-2 text-slate-700">{plan.OrderCode || '--'}</td>
+                                                <td className="px-3 py-2 text-slate-700 max-w-56 truncate" title={plan.ProductName}>{plan.ProductName || '--'}</td>
+                                                <td className="px-3 py-2 text-slate-700">{plan.ProductCode || '--'}</td>
+                                                <td className="px-3 py-2 text-slate-700">{plan.OperationName || plan.OperationCode || '--'}</td>
+                                                <td className="px-3 py-2 text-slate-700">{plan.DepartmentName || '--'}</td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <button type="button" onClick={() => removeSelectedPlan(plan.PlanSelectKey)} className="inline-flex items-center text-red-500 hover:text-red-700">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
                     </div>

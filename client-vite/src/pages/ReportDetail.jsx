@@ -36,6 +36,7 @@ import { useAuth } from "../context/AuthContext";
 import StatusBadge from "../components/ui/StatusBadge";
 import { cn } from "../context/UIContext";
 import SearchSelect from "../components/ui/SearchSelect";
+import StaticSelect from "../components/ui/StaticSelect";
 
 export default function ReportDetail() {
     const { id } = useParams();
@@ -46,6 +47,9 @@ export default function ReportDetail() {
     const [actions, setActions] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("overview");
+    const [editErpSearch, setEditErpSearch] = useState("");
+    const [editErpPlans, setEditErpPlans] = useState([]);
+    const [editSelectedPlans, setEditSelectedPlans] = useState([]);
 
     // ── Print Logic ─────────────────────────────────────────────
     const printRef = React.useRef();
@@ -415,7 +419,7 @@ export default function ReportDetail() {
         const r = data.report;
         setEditForm({
             reportId: id ? Number(id) : null,
-            planSelectKey: r.SourcePlanSelectKey,
+            planSelectKeys: data.plans?.map((plan) => plan.PlanSelectKey) || [],
             occurrenceTime: r.OccurrenceTime,
             exceptionTypeId: r.ExceptionTypeID,
             exceptionCauseId: r.ExceptionCauseID,
@@ -432,7 +436,34 @@ export default function ReportDetail() {
             impactCodesCsv: data.impacts?.map((i) => i.ImpactCode).join(",") || "",
             occurredDeptCode_NT: r.OccurredDeptName_NT || "",
         });
+        setEditSelectedPlans(data.plans || []);
         setIsEditing(true);
+    };
+
+    const searchEditERP = async () => {
+        if (!editErpSearch.trim()) return showToast("Vui lòng nhập từ khóa ERP", "warning");
+        try {
+            const { data: res } = await api.get(`/erp/production-plans/search?keyword=${encodeURIComponent(editErpSearch)}&topN=50`);
+            setEditErpPlans(res.success ? (res.data.items || []) : []);
+        } catch {
+            showToast("Lỗi tìm kiếm ERP", "error");
+        }
+    };
+
+    const addEditPlan = (plan) => {
+        if (!plan) return;
+        if (editSelectedPlans.some((item) => item.PlanSelectKey === plan.PlanSelectKey)) {
+            return showToast("Kế hoạch này đã được chọn", "warning");
+        }
+        const nextPlans = [...editSelectedPlans, plan];
+        setEditSelectedPlans(nextPlans);
+        setEditForm((prev) => ({ ...prev, planSelectKeys: nextPlans.map((item) => item.PlanSelectKey) }));
+    };
+
+    const removeEditPlan = (planSelectKey) => {
+        const nextPlans = editSelectedPlans.filter((plan) => plan.PlanSelectKey !== planSelectKey);
+        setEditSelectedPlans(nextPlans);
+        setEditForm((prev) => ({ ...prev, planSelectKeys: nextPlans.map((item) => item.PlanSelectKey) }));
     };
 
     useEffect(() => {
@@ -512,6 +543,7 @@ export default function ReportDetail() {
         );
 
     const r = data.report;
+    const plans = data.plans || [];
     const history = data.history || [];
     const costLines = data.costLines || [];
     const impacts = data.impacts || [];
@@ -544,10 +576,7 @@ export default function ReportDetail() {
                         </div>
                     </h1>
                     <div className="text-slate-500 font-medium mt-1 flex items-center gap-3 flex-wrap">
-                        <span>
-                            {r.ExceptionTypeName || "--"}{" "}
-                            {r.ProductName ? `- ${r.ProductName}` : ""}
-                        </span>
+                        <span>Loại phát sinh: {r.ExceptionTypeName || "--"}</span>
                         {r.HasCost && totalCost > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-bold">
                                 <DollarSign className="w-3 h-3" />
@@ -560,10 +589,10 @@ export default function ReportDetail() {
                 <div className="flex gap-3 flex-wrap">
                     {/* ── Action Buttons (dựa trên quyền từ API) ── */}
 
-                    {/* Trình Phản Hồi: REPORTER khi phiếu ở DRAFT / NEED_SUPPLEMENT */}
-                    {actions?.CanSubmit && (
+                    {/* Chỉnh sửa / Trình phản hồi: REPORTER khi phiếu ở DRAFT / NEED_SUPPLEMENT */}
+                    {(actions?.CanEditDraft || actions?.CanSubmit) && (
                         <>
-                            {data.report.StatusCode === "DRAFT" && !isEditing && (
+                            {actions?.CanEditDraft && !isEditing && (
                                 <button
                                     onClick={startEditing}
                                     className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700"
@@ -571,7 +600,7 @@ export default function ReportDetail() {
                                     <Plus className="w-4 h-4 mr-2" /> Chỉnh Sửa
                                 </button>
                             )}
-                            {!isEditing && (
+                            {actions?.CanSubmit && !isEditing && (
                                 <button
                                     onClick={submitReport}
                                     className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
@@ -698,7 +727,7 @@ export default function ReportDetail() {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="flex border-b border-slate-100 bg-slate-50/50 overflow-x-auto custom-scrollbar">
-                            {["overview", "responses", "costs", "attachments"].map((tab) => (
+                            {["overview", "costs", "attachments"].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -711,11 +740,9 @@ export default function ReportDetail() {
                                 >
                                     {tab === "overview"
                                         ? "Tổng Quan"
-                                        : tab === "responses"
-                                            ? `Phản Hồi${data?.responses?.length > 0 ? ` (${data.responses.length})` : ""}`
-                                            : tab === "costs"
-                                                ? `Chi Phí${costLines.length > 0 ? ` (${costLines.length})` : ""}`
-                                                : `Đính Kèm${data?.attachments?.length > 0 ? ` (${data.attachments.length})` : ""}`}
+                                        : tab === "costs"
+                                            ? `Chi Phí${costLines.length > 0 ? ` (${costLines.length})` : ""}`
+                                            : `Đính Kèm${data?.attachments?.length > 0 ? ` (${data.attachments.length})` : ""}`}
                                 </button>
                             ))}
                         </div>
@@ -1035,6 +1062,134 @@ export default function ReportDetail() {
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div className="space-y-3">
+                                                <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
+                                                    Danh sách kế hoạch ERP liên quan
+                                                </h3>
+                                                <div className="flex gap-3">
+                                                    <input
+                                                        value={editErpSearch}
+                                                        onChange={(e) => setEditErpSearch(e.target.value)}
+                                                        className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                                                        placeholder="Nhập lệnh SX, mã kế hoạch..."
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={searchEditERP}
+                                                        className="px-4 py-2 bg-slate-800 text-white rounded-xl font-bold"
+                                                    >
+                                                        Tìm kế hoạch
+                                                    </button>
+                                                </div>
+                                                {editErpPlans.length > 0 && (
+                                                    <StaticSelect
+                                                        placeholder="-- Chọn dòng kế hoạch phù hợp --"
+                                                        options={editErpPlans}
+                                                        valueField="PlanSelectKey"
+                                                        labelField="DisplayText"
+                                                        value={null}
+                                                        onSelect={addEditPlan}
+                                                    />
+                                                )}
+                                                <div className="overflow-hidden rounded-xl border border-slate-200">
+                                                    <table className="w-full text-xs">
+                                                        <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
+                                                            <tr>
+                                                                <th className="px-3 py-2 text-left">Mã kế hoạch</th>
+                                                                <th className="px-3 py-2 text-left">Đơn hàng</th>
+                                                                <th className="px-3 py-2 text-left">Sản phẩm</th>
+                                                                <th className="px-3 py-2 text-left">ItemCode</th>
+                                                                <th className="px-3 py-2 text-left">Công đoạn</th>
+                                                                <th className="px-3 py-2 text-left">Bộ phận</th>
+                                                                <th className="px-3 py-2 text-right">Xóa</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {editSelectedPlans.length > 0 ? editSelectedPlans.map((plan) => (
+                                                                <tr key={plan.PlanSelectKey}>
+                                                                    <td className="px-3 py-2 font-bold text-slate-800">{plan.PlanNo || plan.PlanID}</td>
+                                                                    <td className="px-3 py-2">{plan.OrderCode || '--'}</td>
+                                                                    <td className="px-3 py-2 max-w-56 truncate" title={plan.ProductName}>{plan.ProductName || '--'}</td>
+                                                                    <td className="px-3 py-2">{plan.ProductCode || '--'}</td>
+                                                                    <td className="px-3 py-2">{plan.OperationName || plan.OperationCode || '--'}</td>
+                                                                    <td className="px-3 py-2">{plan.DepartmentName || '--'}</td>
+                                                                    <td className="px-3 py-2 text-right">
+                                                                        <button type="button" onClick={() => removeEditPlan(plan.PlanSelectKey)} className="text-red-500 hover:text-red-700">
+                                                                            <Trash2 className="w-4 h-4 inline" />
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            )) : (
+                                                                <tr>
+                                                                    <td colSpan="7" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                        Không gắn kế hoạch ERP
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
+                                                    Phản hồi các bộ phận
+                                                </h3>
+                                                <div className="overflow-hidden rounded-xl border border-slate-200">
+                                                    <table className="w-full text-xs">
+                                                        <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
+                                                            <tr>
+                                                                <th className="px-3 py-2 text-left">Bộ phận</th>
+                                                                <th className="px-3 py-2 text-left">Người phản hồi</th>
+                                                                <th className="px-3 py-2 text-left">Nội dung phản hồi</th>
+                                                                <th className="px-3 py-2 text-left">Đánh giá nguyên nhân</th>
+                                                                <th className="px-3 py-2 text-left">Đề xuất hành động</th>
+                                                                <th className="px-3 py-2 text-center">Chi phí</th>
+                                                                <th className="px-3 py-2 text-center">Thời gian</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {data.responses?.length > 0 ? data.responses.map((resp, idx) => (
+                                                                <tr key={idx} className="align-top">
+                                                                    <td className="px-3 py-2 font-bold text-slate-800">
+                                                                        {resp.DepartmentName || resp.DepartmentCode || "N/A"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2">
+                                                                        {resp.ResponderEmpName || resp.ResponderEmpCode || "SYSTEM"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap min-w-48">
+                                                                        {resp.ResponseContent || "--"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap min-w-40">
+                                                                        {resp.CauseAssessment || "--"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap min-w-40">
+                                                                        {resp.ProposedAction || "--"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-center">
+                                                                        <span className={cn(
+                                                                            "inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border",
+                                                                            resp.HasDeptCost
+                                                                                ? "bg-red-50 text-red-600 border-red-100"
+                                                                                : "bg-emerald-50 text-emerald-600 border-emerald-100",
+                                                                        )}>
+                                                                            {resp.HasDeptCost ? "Có" : "Không"}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-center whitespace-nowrap">
+                                                                        {formatDate(resp.ResponseAt)}
+                                                                    </td>
+                                                                </tr>
+                                                            )) : (
+                                                                <tr>
+                                                                    <td colSpan="7" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                        Chưa có phản hồi nào
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
                                         </div>
                                     ) : (
                                         <>
@@ -1133,10 +1288,6 @@ export default function ReportDetail() {
                                                         </div>
                                                     )}
                                                     <Field
-                                                        label="Mã Kế hoạch ERP"
-                                                        value={r.SourcePlanNo}
-                                                    />
-                                                    <Field
                                                         label="Bộ phận xảy ra lỗi"
                                                         value={r.OccurredDepartmentName}
                                                     />
@@ -1181,127 +1332,108 @@ export default function ReportDetail() {
                                                     )}
                                                 </div>
                                             </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* ── Tab Phản hồi ── */}
-                            {activeTab === "responses" && (
-                                <div className="animate-in fade-in space-y-4">
-                                    <h3 className="font-bold text-slate-800 uppercase tracking-wider text-xs border-b pb-2 mb-4">
-                                        Các Bộ Phận Phản Hồi
-                                    </h3>
-                                    {!data.responses || data.responses.length === 0 ? (
-                                        <p className="text-slate-500 italic text-sm">
-                                            Chưa có phản hồi nào.
-                                        </p>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {data.responses.map((resp, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="bg-slate-50 p-5 rounded-xl border border-slate-200 shadow-sm"
-                                                >
-                                                    <div className="flex justify-between items-start mb-3 border-b border-slate-200 pb-3">
-                                                        <div>
-                                                            <div className="font-bold text-slate-800 text-sm">
-                                                                {resp.DepartmentName ||
-                                                                    resp.DepartmentCode ||
-                                                                    "N/A"}
-                                                            </div>
-                                                            <div className="text-xs text-slate-500 mt-1 font-medium">
-                                                                Bởi:{" "}
-                                                                <span className="font-bold">
-                                                                    {resp.ResponderEmpName ||
-                                                                        resp.ResponderEmpCode ||
-                                                                        "SYSTEM"}
-                                                                </span>{" "}
-                                                                — {formatDate(resp.ResponseAt)}
-                                                            </div>
-                                                        </div>
-                                                        <span
-                                                            className={cn(
-                                                                "text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm",
-                                                                resp.HasDeptCost
-                                                                    ? "bg-red-100 text-red-700 border border-red-200"
-                                                                    : "bg-emerald-100 text-emerald-700 border border-emerald-200",
+                                            <div className="space-y-3">
+                                                <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
+                                                    Danh sách kế hoạch ERP liên quan
+                                                </h3>
+                                                <div className="overflow-hidden rounded-xl border border-slate-200">
+                                                    <table className="w-full text-xs">
+                                                        <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
+                                                            <tr>
+                                                                <th className="px-3 py-2 text-left">Mã kế hoạch</th>
+                                                                <th className="px-3 py-2 text-left">Đơn hàng</th>
+                                                                <th className="px-3 py-2 text-left">Sản phẩm</th>
+                                                                <th className="px-3 py-2 text-left">ItemCode</th>
+                                                                <th className="px-3 py-2 text-left">Công đoạn</th>
+                                                                <th className="px-3 py-2 text-left">Bộ phận</th>
+                                                                <th className="px-3 py-2 text-center">Ngày KH</th>
+                                                                <th className="px-3 py-2 text-right">Số lượng</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {plans.length > 0 ? plans.map((plan) => (
+                                                                <tr key={plan.PlanSelectKey}>
+                                                                    <td className="px-3 py-2 font-bold text-slate-800">{plan.PlanNo || plan.PlanID}</td>
+                                                                    <td className="px-3 py-2">{plan.OrderCode || '--'}</td>
+                                                                    <td className="px-3 py-2 max-w-56 truncate" title={plan.ProductName}>{plan.ProductName || '--'}</td>
+                                                                    <td className="px-3 py-2">{plan.ProductCode || '--'}</td>
+                                                                    <td className="px-3 py-2">{plan.OperationName || plan.OperationCode || '--'}</td>
+                                                                    <td className="px-3 py-2">{plan.DepartmentName || '--'}</td>
+                                                                    <td className="px-3 py-2 text-center">{formatDate(plan.PlanDate, false) || '--'}</td>
+                                                                    <td className="px-3 py-2 text-right">{plan.PlanQty ?? '--'}</td>
+                                                                </tr>
+                                                            )) : (
+                                                                <tr>
+                                                                    <td colSpan="8" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                        Không gắn kế hoạch ERP
+                                                                    </td>
+                                                                </tr>
                                                             )}
-                                                        >
-                                                            {resp.HasDeptCost
-                                                                ? "CÓ CHI PHÍ"
-                                                                : "KHÔNG CHI PHÍ"}
-                                                        </span>
-                                                    </div>
-                                                    <div className="space-y-4 text-sm">
-                                                        <div>
-                                                            <span className="font-bold text-slate-700 block text-xs tracking-wider uppercase mb-1">
-                                                                Xác nhận / Nhận định:
-                                                            </span>
-                                                            <p className="text-slate-800 bg-white p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
-                                                                {resp.ResponseContent || "--"}
-                                                            </p>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div>
-                                                                <span className="font-bold text-slate-700 block text-xs tracking-wider uppercase mb-1">
-                                                                    Đánh giá nguyên nhân:
-                                                                </span>
-                                                                <p className="text-slate-800 bg-white p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
-                                                                    {resp.CauseAssessment || "--"}
-                                                                </p>
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-bold text-slate-700 block text-xs tracking-wider uppercase mb-1">
-                                                                    Đề xuất hành động:
-                                                                </span>
-                                                                <p className="text-slate-800 bg-white p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
-                                                                    {resp.ProposedAction || "--"}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Hiển thị chi tiết chi phí của bộ phận này nếu có */}
-                                                        {resp.HasDeptCost && (
-                                                            <div className="mt-4 border-t border-slate-100 pt-4 space-y-3">
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="font-bold text-red-600 text-[10px] tracking-widest uppercase flex items-center gap-1">
-                                                                        <DollarSign className="w-3 h-3" />
-                                                                        Chi tiết chi phí phát sinh
-                                                                    </span>
-                                                                    <span className="text-xs font-black text-slate-800">
-                                                                        Tổng: {formatMoney(data.costLines?.filter(c => c.DepartmentCode === resp.DepartmentCode).reduce((s, c) => s + (Number(c.Amount) || 0), 0))}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                                                                    <table className="w-full text-[11px]">
-                                                                        <thead className="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
-                                                                            <tr>
-                                                                                <th className="px-3 py-1.5 text-left">Mô tả</th>
-                                                                                <th className="px-3 py-1.5 text-right">T.Tiền</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody className="divide-y divide-slate-50 text-slate-600">
-                                                                            {data.costLines?.filter(c => c.DepartmentCode === resp.DepartmentCode).map((c, ki) => (
-                                                                                <tr key={ki}>
-                                                                                    <td className="px-3 py-2">
-                                                                                        <div className="font-bold text-slate-700">{c.CostTypeName}</div>
-                                                                                        <div className="text-[10px]">{c.CostItemDesc}</div>
-                                                                                    </td>
-                                                                                    <td className="px-3 py-2 text-right font-bold text-slate-800">
-                                                                                        {formatMoney(c.Amount)}
-                                                                                    </td>
-                                                                                </tr>
-                                                                            ))}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                        </tbody>
+                                                    </table>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
+                                                    Phản hồi các bộ phận
+                                                </h3>
+                                                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                                    <table className="w-full min-w-225 text-xs">
+                                                        <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
+                                                            <tr>
+                                                                <th className="px-3 py-2 text-left">Bộ phận</th>
+                                                                <th className="px-3 py-2 text-left">Người phản hồi</th>
+                                                                <th className="px-3 py-2 text-left">Nội dung phản hồi</th>
+                                                                <th className="px-3 py-2 text-left">Đánh giá nguyên nhân</th>
+                                                                <th className="px-3 py-2 text-left">Đề xuất hành động</th>
+                                                                <th className="px-3 py-2 text-center">Chi phí</th>
+                                                                <th className="px-3 py-2 text-center">Thời gian</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {data.responses?.length > 0 ? data.responses.map((resp, idx) => (
+                                                                <tr key={idx} className="align-top">
+                                                                    <td className="px-3 py-2 font-bold text-slate-800">
+                                                                        {resp.DepartmentName || resp.DepartmentCode || "N/A"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2">
+                                                                        {resp.ResponderEmpName || resp.ResponderEmpCode || "SYSTEM"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap min-w-48">
+                                                                        {resp.ResponseContent || "--"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap min-w-40">
+                                                                        {resp.CauseAssessment || "--"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap min-w-40">
+                                                                        {resp.ProposedAction || "--"}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-center">
+                                                                        <span className={cn(
+                                                                            "inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border",
+                                                                            resp.HasDeptCost
+                                                                                ? "bg-red-50 text-red-600 border-red-100"
+                                                                                : "bg-emerald-50 text-emerald-600 border-emerald-100",
+                                                                        )}>
+                                                                            {resp.HasDeptCost ? "Có" : "Không"}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-center whitespace-nowrap">
+                                                                        {formatDate(resp.ResponseAt)}
+                                                                    </td>
+                                                                </tr>
+                                                            )) : (
+                                                                <tr>
+                                                                    <td colSpan="7" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                        Chưa có phản hồi nào
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             )}

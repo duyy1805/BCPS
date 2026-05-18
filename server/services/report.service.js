@@ -42,15 +42,24 @@ class ReportService {
     }
 
     async saveDraft(body, currentUser) {
-        const hasPlanSelection =
-            body.planSelectKey !== undefined &&
-            body.planSelectKey !== null &&
-            String(body.planSelectKey).trim() !== "" &&
-            String(body.planSelectKey).trim() !== "0";
+        const planSelectKeys = Array.isArray(body.planSelectKeys)
+            ? [...new Set(body.planSelectKeys.map((key) => String(key || "").trim()).filter((key) => key && key !== "0"))]
+            : (
+                body.planSelectKey !== undefined &&
+                body.planSelectKey !== null &&
+                String(body.planSelectKey).trim() !== "" &&
+                String(body.planSelectKey).trim() !== "0"
+                    ? [String(body.planSelectKey).trim()]
+                    : []
+            );
+        const hasPlanSelection = planSelectKeys.length > 0;
 
         const payload = {
             reportId: body.reportId || null,
-            planSelectKey: hasPlanSelection ? body.planSelectKey : null,
+            // Keep one legacy value so existing stored procedures can continue populating
+            // compatibility columns on ps.Report. The canonical relationship is synced below.
+            planSelectKey: hasPlanSelection ? planSelectKeys[0] : null,
+            planSelectKeys,
             occurrenceTime: body.occurrenceTime || null,
             exceptionTypeId: body.exceptionTypeId ? Number(body.exceptionTypeId) : null,
             exceptionCauseId: body.exceptionCauseId ? Number(body.exceptionCauseId) : null,
@@ -68,7 +77,9 @@ class ReportService {
             expectedResult: body.expectedResult || null,
             dueDate: body.dueDate || null,
             hasCost: this.toBoolean(body.hasCost, false),
-            affectsERP: this.toBoolean(body.affectsERP, true),
+            affectsERP: body.affectsERP === undefined
+                ? hasPlanSelection
+                : this.toBoolean(body.affectsERP, hasPlanSelection),
             impactCodesCsv: this.toNullableCsv(body.impactCodesCsv),
             occurredDeptCode_NT: body.occurredDeptCode_NT || null,
             actionByEmpCode: currentUser.employeeCode
@@ -86,9 +97,12 @@ class ReportService {
             ? await this.repo.saveDraft(payload)
             : await this.repo.saveDraftWithoutPlan(payload);
 
+        const reportId = result.output.ReportID || result.output.ReportId;
+        await this.repo.syncPlans(reportId, planSelectKeys, currentUser.employeeCode);
+
         return ok(
             {
-                reportId: result.output.ReportID || result.output.ReportId,
+                reportId,
                 reportNo: result.output.ReportNo
             },
             "Lưu nháp thành công."
@@ -167,6 +181,13 @@ class ReportService {
             ...query,
             empCode: currentUser.employeeCode
         });
+        const items = result.recordsets[1] || [];
+        const planResult = await this.repo.getPlansForReports(items.map((item) => item.ReportID));
+        const plansByReportId = (planResult.recordset || []).reduce((acc, plan) => {
+            if (!acc[plan.ReportID]) acc[plan.ReportID] = [];
+            acc[plan.ReportID].push(plan);
+            return acc;
+        }, {});
 
         return ok({
             meta: result.recordsets[0]?.[0] || {
@@ -175,7 +196,10 @@ class ReportService {
                 pageSize: Number(query.pageSize || 20),
                 totalPages: 0
             },
-            items: result.recordsets[1] || []
+            items: items.map((item) => ({
+                ...item,
+                Plans: plansByReportId[item.ReportID] || []
+            }))
         });
     }
 
