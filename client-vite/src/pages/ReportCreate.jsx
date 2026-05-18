@@ -160,7 +160,6 @@ export default function ReportCreate() {
     };
 
     const submitDraft = async () => {
-        if (!selectedPlan) return showToast('Vui lòng chọn kế hoạch ERP', 'warning');
         if (!form.shortDesc) return showToast('Vui lòng nhập mô tả ngắn', 'warning');
         if (!form.solution) return showToast('Vui lòng nhập đề xuất xử lý', 'warning');
         if (!form.deptCode) return showToast('Vui lòng chọn bộ phận chịu trách nhiệm', 'warning');
@@ -172,7 +171,7 @@ export default function ReportCreate() {
         try {
             const body = {
                 reportId: null,
-                planSelectKey: selectedPlan.PlanSelectKey,
+                planSelectKey: selectedPlan?.PlanSelectKey || 0,
                 occurrenceTime: new Date().toISOString(),
                 exceptionTypeId: Number(form.typeId),
                 exceptionCauseId: Number(form.causeId),
@@ -188,7 +187,7 @@ export default function ReportCreate() {
                 expectedResult: null,
                 dueDate: form.dueDate || null,
                 hasCost: form.hasCost,
-                affectsERP: true,
+                affectsERP: Boolean(selectedPlan),
                 impactCodesCsv: form.impactCodes.join(','),
                 coordDepartmentCodesCsv: form.coordDeptCodes.join(','),
                 occurredDeptCode_NT: form.occurredDeptCode_NT || null
@@ -296,7 +295,7 @@ export default function ReportCreate() {
                     </div>
 
                     {/* Main Form Box */}
-                    <div className={cn("bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm transition-opacity", !selectedPlan && "opacity-50 pointer-events-none")}>
+                    <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <h3 className="text-[11px] md:text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">2. Thông tin sự việc</h3>
 
                         <div className="space-y-5">
@@ -359,7 +358,7 @@ export default function ReportCreate() {
                 </div>
 
                 {/* Right Col */}
-                <div className={cn("space-y-6 transition-opacity", !selectedPlan && "opacity-50 pointer-events-none")}>
+                <div className="space-y-6">
 
                     {/* Action form */}
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">

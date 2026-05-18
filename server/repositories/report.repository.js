@@ -39,6 +39,183 @@ class ReportRepository extends DbRepository {
         ]);
     }
 
+    async saveDraftWithoutPlan(params) {
+        const result = await this.query(
+            `
+            SET NOCOUNT ON;
+            SET XACT_ABORT ON;
+
+            BEGIN TRY
+                BEGIN TRAN;
+
+                DECLARE
+                    @ResponsibleDeptName NVARCHAR(255),
+                    @MainResponsibleEmpName NVARCHAR(255),
+                    @CreatedByEmpName NVARCHAR(255),
+                    @Seq BIGINT,
+                    @ReportNo VARCHAR(30),
+                    @ReportID BIGINT;
+
+                SELECT TOP (1)
+                    @ResponsibleDeptName = DepartmentName
+                FROM ps.vw_Department
+                WHERE DepartmentCode = @ResponsibleDeptCode
+                  AND IsActive = 1;
+
+                IF @ResponsibleDeptName IS NULL
+                    THROW 54001, N'Bộ phận chịu trách nhiệm không hợp lệ.', 1;
+
+                SELECT TOP (1)
+                    @MainResponsibleEmpName = EmployeeName
+                FROM erpint.vw_Employee
+                WHERE EmployeeCode = @MainResponsibleEmpCode
+                  AND IsActive = 1;
+
+                IF @MainResponsibleEmpName IS NULL
+                    THROW 54002, N'Cá nhân chịu trách nhiệm chính không hợp lệ.', 1;
+
+                SELECT TOP (1)
+                    @CreatedByEmpName = EmployeeName
+                FROM erpint.vw_Employee
+                WHERE EmployeeCode = @ActionByEmpCode
+                  AND IsActive = 1;
+
+                IF @CreatedByEmpName IS NULL
+                    THROW 54003, N'Người tạo báo cáo không hợp lệ.', 1;
+
+                SET @Seq = NEXT VALUE FOR ps.Seq_ReportNo;
+                SET @ReportNo = CONCAT(
+                    'BCPS-',
+                    CONVERT(VARCHAR(8), GETDATE(), 112),
+                    '-',
+                    RIGHT(REPLICATE('0', 6) + CAST(@Seq AS VARCHAR(20)), 6)
+                );
+
+                INSERT INTO ps.Report
+                (
+                    ReportNo,
+                    OccurrenceTime,
+                    ExceptionTypeID,
+                    ExceptionCauseID,
+                    SeverityCode,
+                    ShortDescription,
+                    DetailedDescription,
+                    AffectedQty,
+                    AffectedUom,
+                    ResponsibleDeptCode,
+                    ResponsibleDeptName,
+                    MainResponsibleEmpCode,
+                    MainResponsibleEmpName,
+                    ProposedSolution,
+                    InterimAction,
+                    ExpectedResult,
+                    DueDate,
+                    HasCost,
+                    AffectsERP,
+                    StatusCode,
+                    CurrentStep,
+                    CreatedByEmpCode,
+                    CreatedByEmpName,
+                    CreatedAt
+                )
+                VALUES
+                (
+                    @ReportNo,
+                    @OccurrenceTime,
+                    @ExceptionTypeID,
+                    @ExceptionCauseID,
+                    @SeverityCode,
+                    @ShortDescription,
+                    @DetailedDescription,
+                    @AffectedQty,
+                    @AffectedUom,
+                    @ResponsibleDeptCode,
+                    @ResponsibleDeptName,
+                    @MainResponsibleEmpCode,
+                    @MainResponsibleEmpName,
+                    @ProposedSolution,
+                    @InterimAction,
+                    @ExpectedResult,
+                    @DueDate,
+                    @HasCost,
+                    0,
+                    'DRAFT',
+                    N'Nháp',
+                    @ActionByEmpCode,
+                    @CreatedByEmpName,
+                    SYSDATETIME()
+                );
+
+                SET @ReportID = SCOPE_IDENTITY();
+
+                INSERT INTO ps.ReportHistory
+                (
+                    ReportID, ActionCode, ActionName, FromStatusCode, ToStatusCode,
+                    ActionByEmpCode, ActionByEmpName, ActionAt, Note
+                )
+                VALUES
+                (
+                    @ReportID,
+                    'CREATE',
+                    N'Tạo báo cáo phát sinh không gắn kế hoạch ERP',
+                    NULL,
+                    'DRAFT',
+                    @ActionByEmpCode,
+                    @CreatedByEmpName,
+                    SYSDATETIME(),
+                    N'Báo cáo được tạo không gắn kế hoạch ERP.'
+                );
+
+                EXEC ps.usp_Report_SetImpacts
+                    @ReportID = @ReportID,
+                    @ImpactCodesCsv = @ImpactCodesCsv;
+
+                EXEC ps.usp_Report_SetCoordDepartments
+                    @ReportID = @ReportID,
+                    @DepartmentCodesCsv = @CoordDepartmentCodesCsv;
+
+                COMMIT;
+
+                SELECT @ReportID AS ReportID, @ReportNo AS ReportNo;
+            END TRY
+            BEGIN CATCH
+                IF @@TRANCOUNT > 0
+                    ROLLBACK;
+                THROW;
+            END CATCH
+            `,
+            [
+                { name: "OccurrenceTime", type: sql.DateTime2(0), value: params.occurrenceTime },
+                { name: "ExceptionTypeID", type: sql.Int, value: params.exceptionTypeId },
+                { name: "ExceptionCauseID", type: sql.Int, value: params.exceptionCauseId },
+                { name: "SeverityCode", type: sql.VarChar(30), value: params.severityCode },
+                { name: "ShortDescription", type: sql.NVarChar(500), value: params.shortDescription },
+                { name: "DetailedDescription", type: sql.NVarChar(sql.MAX), value: params.detailedDescription },
+                { name: "AffectedQty", type: sql.Decimal(18, 3), value: params.affectedQty },
+                { name: "AffectedUom", type: sql.NVarChar(50), value: params.affectedUom },
+                { name: "ResponsibleDeptCode", type: sql.NVarChar(255), value: params.responsibleDeptCode },
+                { name: "MainResponsibleEmpCode", type: sql.VarChar(50), value: params.mainResponsibleEmpCode },
+                { name: "ProposedSolution", type: sql.NVarChar(sql.MAX), value: params.proposedSolution },
+                { name: "InterimAction", type: sql.NVarChar(sql.MAX), value: params.interimAction },
+                { name: "ExpectedResult", type: sql.NVarChar(sql.MAX), value: params.expectedResult },
+                { name: "DueDate", type: sql.DateTime2(0), value: params.dueDate },
+                { name: "HasCost", type: sql.Bit, value: params.hasCost },
+                { name: "ImpactCodesCsv", type: sql.NVarChar(500), value: params.impactCodesCsv || "" },
+                { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: params.coordDepartmentCodesCsv || "" },
+                { name: "ActionByEmpCode", type: sql.VarChar(50), value: params.actionByEmpCode }
+            ]
+        );
+
+        const row = result.recordset?.[0] || {};
+        return {
+            recordsets: result.recordsets || [],
+            output: {
+                ReportID: row.ReportID,
+                ReportNo: row.ReportNo
+            }
+        };
+    }
+
     async submit(reportId, empCode) {
         return this.executeStoredProcedure("ps.usp_Report_SubmitFull", [
             { name: "ReportID", type: sql.BigInt, value: reportId },

@@ -42,9 +42,15 @@ class ReportService {
     }
 
     async saveDraft(body, currentUser) {
+        const hasPlanSelection =
+            body.planSelectKey !== undefined &&
+            body.planSelectKey !== null &&
+            String(body.planSelectKey).trim() !== "" &&
+            String(body.planSelectKey).trim() !== "0";
+
         const payload = {
             reportId: body.reportId || null,
-            planSelectKey: body.planSelectKey || null,
+            planSelectKey: hasPlanSelection ? body.planSelectKey : null,
             occurrenceTime: body.occurrenceTime || null,
             exceptionTypeId: body.exceptionTypeId ? Number(body.exceptionTypeId) : null,
             exceptionCauseId: body.exceptionCauseId ? Number(body.exceptionCauseId) : null,
@@ -76,9 +82,9 @@ class ReportService {
         const merged = [...new Set([...MANDATORY_DEPTS, ...userSelected])];
         payload.coordDepartmentCodesCsv = merged.length ? merged.join(",") : null;
 
-        const result = await this.repo.saveDraft({
-            ...payload
-        });
+        const result = payload.planSelectKey || payload.reportId
+            ? await this.repo.saveDraft(payload)
+            : await this.repo.saveDraftWithoutPlan(payload);
 
         return ok(
             {

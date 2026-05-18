@@ -81,3 +81,5 @@ A lightweight, multi-page application (MPA) structure:
 4.  **Error Handling:** Use `try-catch` blocks in controllers and pass errors to `next(err)` to trigger the centralized error middleware.
 5.  **Frontend API Calls:** Always use the `fetchAPI` function from `js/api.js` to ensure tokens and headers are handled correctly.
 6.  **File Uploads:** Uploaded files are stored in `server/uploads/`.
+
+\*\*Cần phải thêm khi hoàn thành báo cáo phát sinh thì nó sẽ điều chỉnh trên ERP
