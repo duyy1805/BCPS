@@ -176,6 +176,11 @@ class ReportService {
         return ok({ reportId }, "Đã đóng phát sinh.");
     }
 
+    async deleteDraft(reportId, currentUser) {
+        await this.repo.deleteDraft(reportId, currentUser.employeeCode);
+        return ok({ reportId }, "Đã xóa phiếu nháp.");
+    }
+
     async listPaged(query, currentUser) {
         const result = await this.repo.listPaged({
             ...query,

@@ -371,7 +371,7 @@ class ReportRepository extends DbRepository {
             { name: "ReportID", type: sql.BigInt, value: id }
         ]);
 
-        if (!result.recordsets[0].length) return null;
+        if (!result.recordsets[0].length || result.recordsets[0][0].IsDeleted) return null;
 
         const report = result.recordsets[0][0];
         const impacts = result.recordsets[1];
@@ -507,6 +507,13 @@ class ReportRepository extends DbRepository {
 
             { name: "SortColumn", type: sql.VarChar(50), value: params.sortColumn || "CreatedAt" },
             { name: "SortDirection", type: sql.VarChar(4), value: params.sortDirection || "DESC" }
+        ]);
+    }
+
+    async deleteDraft(reportId, empCode) {
+        return this.executeStoredProcedure("ps.usp_Report_DeleteDraft", [
+            { name: "ReportID", type: sql.BigInt, value: reportId },
+            { name: "ActionByEmpCode", type: sql.VarChar(50), value: empCode }
         ]);
     }
 

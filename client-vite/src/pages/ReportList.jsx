@@ -5,6 +5,17 @@ import api, { formatMoney, formatDate } from "../utils/api";
 import StatusBadge from "../components/ui/StatusBadge";
 import { useUI } from "../context/UIContext";
 import { useAuth } from "../context/AuthContext";
+import StaticSelect from "../components/ui/StaticSelect";
+
+const STATUS_FILTER_OPTIONS = [
+    { value: "ALL", label: "Tất cả trạng thái" },
+    { value: "DRAFT", label: "Nháp" },
+    { value: "WAITING_FEEDBACK", label: "Chờ phản hồi" },
+    { value: "WAITING_APPROVAL", label: "Chờ phê duyệt" },
+    { value: "APPROVED", label: "Đã duyệt" },
+    { value: "REJECTED", label: "Từ chối" },
+    { value: "CLOSED", label: "Đã đóng" },
+];
 
 export default function ReportList() {
     const { showToast } = useUI();
@@ -81,24 +92,15 @@ export default function ReportList() {
                         />
                     </div>
                     <div className="flex flex-row gap-3">
-                        <div className="relative flex-1 md:flex-none">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Filter className="h-4 w-4 text-slate-400" />
-                            </div>
-                            <select
-                                value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="block w-full md:w-48 pl-10 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium appearance-none"
-                            >
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="DRAFT">Nháp</option>
-                                <option value="WAITING_FEEDBACK">Chờ phản hồi</option>
-                                <option value="WAITING_APPROVAL">Chờ phê duyệt</option>
-                                <option value="APPROVED">Đã duyệt</option>
-                                <option value="REJECTED">Từ chối</option>
-                                <option value="CLOSED">Đã đóng</option>
-                            </select>
-                        </div>
+                        <StaticSelect
+                            options={STATUS_FILTER_OPTIONS}
+                            value={status || "ALL"}
+                            onSelect={(opt) => setStatus(opt?.value === "ALL" ? "" : opt?.value || "")}
+                            className="flex-1 md:flex-none md:w-56"
+                            controlClassName="py-2.5 text-sm"
+                            leftIcon={Filter}
+                            clearable={false}
+                        />
 
                         {(user?.roles?.includes("KHO_MANAGER") ||
                             user?.roles?.includes("VT_MANAGER") ||
@@ -140,7 +142,7 @@ export default function ReportList() {
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                             <tr>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Mã BCPS / Ngày</th>
-                                <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm hidden sm:table-cell">Lệnh SX / Mã hàng</th>
+                                <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm hidden sm:table-cell">Đơn hàng/ Sản phẩm</th>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Loại phát sinh</th>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Người tạo</th>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm hidden lg:table-cell">Bộ phận chịu TN</th>
@@ -190,7 +192,7 @@ export default function ReportList() {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <div className="text-sm text-slate-400 italic">Không gắn ERP</div>
+                                                    <div className="text-sm text-slate-400 italic">Không có kế hoạch</div>
                                                 )}
                                             </div>
                                         </td>

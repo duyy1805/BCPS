@@ -92,6 +92,15 @@ async function closeReport(req, res, next) {
     }
 }
 
+async function deleteDraft(req, res, next) {
+    try {
+        const result = await service.deleteDraft(Number(req.params.reportId), req.currentUser);
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+}
+
 async function addAttachment(req, res, next) {
     try {
         if (!req.file) {
@@ -122,5 +131,6 @@ module.exports = {
     submitApproval,
     approvalDecision,
     closeReport,
+    deleteDraft,
     addAttachment
 };

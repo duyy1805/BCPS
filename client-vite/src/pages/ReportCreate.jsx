@@ -338,7 +338,7 @@ export default function ReportCreate() {
 
                     {/* Main Form Box */}
                     <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 className="text-[11px] md:text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">2. Thông tin sự việc</h3>
+                        <h3 className="text-[11px] md:text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">2. Thông tin chung</h3>
 
                         <div className="space-y-5">
                             <div>
@@ -381,7 +381,7 @@ export default function ReportCreate() {
                             </div>
 
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                <label className="block text-sm font-bold text-slate-700 mb-3">Mức độ ảnh hưởng (chọn nhiều)</label>
+                                <label className="block text-sm font-bold text-slate-700 mb-3">Mức độ ảnh hưởng</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {masterData.impactTypes.map(imp => {
                                         const val = imp.ImpactCode || imp.Code || imp.Value || imp.ID;

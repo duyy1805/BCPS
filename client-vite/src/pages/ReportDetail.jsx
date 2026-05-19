@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
     Clock,
     AlertTriangle,
@@ -40,6 +40,7 @@ import StaticSelect from "../components/ui/StaticSelect";
 
 export default function ReportDetail() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const { showToast, confirm, prompt } = useUI();
     const { user } = useAuth();
 
@@ -224,12 +225,16 @@ export default function ReportDetail() {
         }
     };
 
-    const handleAction = async (actionFn, successMsg) => {
+    const handleAction = async (actionFn, successMsg, afterSuccess) => {
         try {
             const res = await actionFn();
             if (res.data.success) {
                 showToast(successMsg, "success");
-                setTimeout(loadDetail, 1000);
+                if (afterSuccess) {
+                    afterSuccess();
+                } else {
+                    setTimeout(loadDetail, 1000);
+                }
             } else {
                 showToast(res.data.message || "Lỗi thao tác", "error");
             }
@@ -274,6 +279,20 @@ export default function ReportDetail() {
                 "Đã ĐÓNG hồ sơ thành công!",
             );
         }
+    };
+
+    const deleteDraftAction = async () => {
+        const accepted = await confirm(
+            "Xóa phiếu nháp",
+            "Bạn có chắc muốn xóa không?",
+        );
+        if (!accepted) return;
+
+        handleAction(
+            () => api.delete(`/reports/${id}`),
+            "Đã xóa phiếu nháp",
+            () => navigate("/reports"),
+        );
     };
 
     const approveReport = async (decision) => {
@@ -629,6 +648,15 @@ export default function ReportDetail() {
                                 {saving ? "Đang lưu..." : "Lưu Thay Đổi"}
                             </button>
                         </div>
+                    )}
+
+                    {actions?.CanDeleteDraft && !isEditing && (
+                        <button
+                            onClick={deleteDraftAction}
+                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600"
+                        >
+                            <Trash2 className="w-4 h-4 mr-2" /> Xóa
+                        </button>
                     )}
 
                     {/* Ghi Phản Hồi: DEPT_HANDLER khi phiếu WAITING_FEEDBACK & BP mình chưa phản hồi */}
@@ -1064,7 +1092,7 @@ export default function ReportDetail() {
                                             </div>
                                             <div className="space-y-3">
                                                 <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
-                                                    Danh sách kế hoạch ERP liên quan
+                                                    Danh sách kế hoạch ERP
                                                 </h3>
                                                 <div className="flex gap-3">
                                                     <input
@@ -1334,7 +1362,7 @@ export default function ReportDetail() {
                                             </div>
                                             <div className="space-y-3">
                                                 <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
-                                                    Danh sách kế hoạch ERP liên quan
+                                                    Danh sách kế hoạch ERP
                                                 </h3>
                                                 <div className="overflow-hidden rounded-xl border border-slate-200">
                                                     <table className="w-full text-xs">

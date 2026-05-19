@@ -18,5 +18,6 @@ router.post("/:reportId/cost-lines", controller.addCostLine);
 router.post("/:reportId/submit-approval", controller.submitApproval);
 router.post("/:reportId/approval-decision", controller.approvalDecision);
 router.post("/:reportId/close", controller.closeReport);
+router.delete("/:reportId", controller.deleteDraft);
 
 module.exports = router;

@@ -11,7 +11,10 @@ export default function StaticSelect({
     placeholder = "Chọn một mục...",
     value = null,
     className = "",
-    valueClassName = ""
+    valueClassName = "",
+    controlClassName = "",
+    leftIcon: LeftIcon = null,
+    clearable = true
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -70,10 +73,12 @@ export default function StaticSelect({
             <div
                 className={cn(
                     "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between cursor-pointer transition-all",
-                    isOpen ? "bg-white border-blue-500 ring-2 ring-blue-500/10" : "hover:border-slate-300"
+                    isOpen ? "bg-white border-blue-500 ring-2 ring-blue-500/10" : "hover:border-slate-300",
+                    controlClassName
                 )}
                 onClick={() => setIsOpen(!isOpen)}
             >
+                {LeftIcon && <LeftIcon className="w-4 h-4 text-slate-400 mr-3 shrink-0" />}
                 <div className="flex-1 truncate">
                     {selected ? (
                         <span className={cn("font-bold text-slate-800", valueClassName)}>
@@ -84,7 +89,7 @@ export default function StaticSelect({
                     )}
                 </div>
                 <div className="flex items-center gap-2">
-                    {selected && (
+                    {clearable && selected && (
                         <X
                             className="w-4 h-4 text-slate-400 hover:text-red-500 transition-colors"
                             onClick={clearSelection}
