@@ -1,10 +1,12 @@
 const path = require("path");
 const { ok } = require("../common/api-response");
 const ReportRepository = require("../repositories/report.repository");
+const NotificationService = require("./notification.service");
 
 class ReportService {
     constructor() {
         this.repo = new ReportRepository();
+        this.notificationService = new NotificationService();
     }
 
     toNullableCsv(value) {
@@ -25,6 +27,14 @@ class ReportService {
         if (value === "true" || value === 1 || value === "1") return true;
         if (value === "false" || value === 0 || value === "0") return false;
         return defaultValue;
+    }
+
+    async notifySafely(actionName, handler) {
+        try {
+            await handler();
+        } catch (err) {
+            console.error(`[Notification] ${actionName} failed:`, err);
+        }
     }
 
     async getCreateFormMasterData() {
@@ -111,6 +121,10 @@ class ReportService {
 
     async submit(reportId, currentUser) {
         await this.repo.submit(reportId, currentUser.employeeCode);
+        await this.notifySafely("submit", async () => {
+            const detail = await this.repo.getDetail(reportId);
+            await this.notificationService.createReportSubmitted(detail, currentUser.employeeCode);
+        });
         return ok({ reportId, statusCode: "WAITING_FEEDBACK" }, "Đã trình báo cáo sang bước phản hồi.");
     }
 
@@ -130,6 +144,10 @@ class ReportService {
         await this.repo.saveResponse(reportId, {
             ...body,
             responderEmpCode: currentUser.employeeCode
+        });
+        await this.notifySafely("saveResponse", async () => {
+            const detail = await this.repo.getDetail(reportId);
+            await this.notificationService.createResponseSaved(detail, body, currentUser.employeeCode);
         });
 
         return ok({ reportId, departmentCode: body.departmentCode }, "Đã lưu phản hồi.");
@@ -151,6 +169,10 @@ class ReportService {
             currentUser.employeeCode,
             currentUser.userName || currentUser.employeeCode
         );
+        await this.notifySafely("submitApproval", async () => {
+            const detail = await this.repo.getDetail(reportId);
+            await this.notificationService.createApprovalSubmitted(detail, currentUser.employeeCode);
+        });
 
         return ok({ reportId }, "Đã trình phê duyệt.");
     }
@@ -162,6 +184,15 @@ class ReportService {
             body.decisionCode,
             body.decisionComment
         );
+        await this.notifySafely("approvalDecision", async () => {
+            const detail = await this.repo.getDetail(reportId);
+            await this.notificationService.createApprovalDecision(
+                detail,
+                body.decisionCode,
+                body.decisionComment,
+                currentUser.employeeCode
+            );
+        });
 
         return ok({ reportId, decisionCode: body.decisionCode }, "Đã cập nhật quyết định phê duyệt.");
     }
@@ -171,6 +202,10 @@ class ReportService {
             ...body,
             actionByEmpCode: currentUser.employeeCode,
             actionByEmpName: currentUser.userName || currentUser.employeeCode
+        });
+        await this.notifySafely("close", async () => {
+            const detail = await this.repo.getDetail(reportId);
+            await this.notificationService.createClosed(detail, currentUser.employeeCode);
         });
 
         return ok({ reportId }, "Đã đóng phát sinh.");

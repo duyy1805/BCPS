@@ -37,12 +37,14 @@ import StatusBadge from "../components/ui/StatusBadge";
 import { cn } from "../context/UIContext";
 import SearchSelect from "../components/ui/SearchSelect";
 import StaticSelect from "../components/ui/StaticSelect";
+import { useNotifications } from "../context/NotificationContext";
 
 export default function ReportDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { showToast, confirm, prompt } = useUI();
     const { user } = useAuth();
+    const { refreshNotifications } = useNotifications();
 
     const [data, setData] = useState(null);
     const [actions, setActions] = useState(null);
@@ -230,6 +232,7 @@ export default function ReportDetail() {
             const res = await actionFn();
             if (res.data.success) {
                 showToast(successMsg, "success");
+                refreshNotifications();
                 if (afterSuccess) {
                     afterSuccess();
                 } else {
@@ -425,6 +428,7 @@ export default function ReportDetail() {
                     note: "",
                     useManual: false,
                 });
+                refreshNotifications();
                 loadDetail();
             }
         } catch (e) {

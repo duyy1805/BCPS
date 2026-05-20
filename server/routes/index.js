@@ -6,6 +6,7 @@ const worklistRoutes = require("./worklist.routes");
 const dashboardRoutes = require("./dashboard.routes");
 const kpiRoutes = require("./kpi.routes");
 const authRoutes = require("./auth.routes");
+const notificationRoutes = require("./notification.routes");
 
 const meController = require("../controllers/me.controller");
 const masterDataController = require("../controllers/master-data.controller");
@@ -31,5 +32,6 @@ router.use("/api/reports", reportRoutes);
 router.use("/api/worklist", worklistRoutes);
 router.use("/api/dashboard", dashboardRoutes);
 router.use("/api/kpi", kpiRoutes);
+router.use("/api/notifications", notificationRoutes);
 
 module.exports = router;
