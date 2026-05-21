@@ -10,7 +10,7 @@ class ReportRepository extends DbRepository {
         console.log("Saving draft with params:", params);
         const nv = (v) => (v === undefined ? null : v);
 
-        return this.executeStoredProcedure("ps.usp_Report_SaveDraftFull", [
+        const result = await this.executeStoredProcedure("ps.usp_Report_SaveDraftFull", [
             { name: "ReportID", type: sql.BigInt, value: nv(params.reportId), output: true },
             { name: "ReportNo", type: sql.VarChar, output: true, length: 30 },
 
@@ -37,6 +37,25 @@ class ReportRepository extends DbRepository {
             // { name: "OccurredDeptName_NT", type: sql.NVarChar(250), value: params.occurredDeptCode_NT || null },
             { name: "ActionByEmpCode", type: sql.VarChar(50), value: params.actionByEmpCode }
         ]);
+
+        const reportId = result.output.ReportID || result.output.ReportId || params.reportId;
+        if (reportId && params.occurredDeptCode_NT) {
+            await this.query(
+                `
+                UPDATE ps.Report
+                SET
+                    OccurredDeptCode_NT = @OccurredDeptName,
+                    OccurredDeptName_NT = @OccurredDeptName
+                WHERE ReportID = @ReportID;
+                `,
+                [
+                    { name: "ReportID", type: sql.BigInt, value: reportId },
+                    { name: "OccurredDeptName", type: sql.NVarChar(255), value: params.occurredDeptCode_NT }
+                ]
+            );
+        }
+
+        return result;
     }
 
     async saveDraftWithoutPlan(params) {
@@ -112,6 +131,8 @@ class ReportRepository extends DbRepository {
                     DueDate,
                     HasCost,
                     AffectsERP,
+                    OccurredDeptCode_NT,
+                    OccurredDeptName_NT,
                     StatusCode,
                     CurrentStep,
                     CreatedByEmpCode,
@@ -139,6 +160,8 @@ class ReportRepository extends DbRepository {
                     @DueDate,
                     @HasCost,
                     0,
+                    @OccurredDeptCode_NT,
+                    @OccurredDeptCode_NT,
                     'DRAFT',
                     N'Nháp',
                     @ActionByEmpCode,
@@ -202,6 +225,7 @@ class ReportRepository extends DbRepository {
                 { name: "HasCost", type: sql.Bit, value: params.hasCost },
                 { name: "ImpactCodesCsv", type: sql.NVarChar(500), value: params.impactCodesCsv || "" },
                 { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: params.coordDepartmentCodesCsv || "" },
+                { name: "OccurredDeptCode_NT", type: sql.NVarChar(255), value: params.occurredDeptCode_NT || null },
                 { name: "ActionByEmpCode", type: sql.VarChar(50), value: params.actionByEmpCode }
             ]
         );
