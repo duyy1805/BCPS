@@ -222,6 +222,15 @@ class ReportService {
             empCode: currentUser.employeeCode
         });
         const items = result.recordsets[1] || [];
+        const rawMeta = result.recordsets[0]?.[0] || {};
+        const pageNumber = Number(rawMeta.pageNumber || rawMeta.PageNumber || query.pageNumber || 1);
+        const pageSize = Number(rawMeta.pageSize || rawMeta.PageSize || query.pageSize || 20);
+        const totalRows = Number(rawMeta.totalRows || rawMeta.TotalRows || 0);
+        const totalPages = Number(
+            rawMeta.totalPages ||
+            rawMeta.TotalPages ||
+            Math.ceil(totalRows / Math.max(1, pageSize))
+        );
         const planResult = await this.repo.getPlansForReports(items.map((item) => item.ReportID));
         const plansByReportId = (planResult.recordset || []).reduce((acc, plan) => {
             if (!acc[plan.ReportID]) acc[plan.ReportID] = [];
@@ -230,11 +239,11 @@ class ReportService {
         }, {});
 
         return ok({
-            meta: result.recordsets[0]?.[0] || {
-                totalRows: 0,
-                pageNumber: Number(query.pageNumber || 1),
-                pageSize: Number(query.pageSize || 20),
-                totalPages: 0
+            meta: {
+                totalRows,
+                pageNumber,
+                pageSize,
+                totalPages
             },
             items: items.map((item) => ({
                 ...item,

@@ -35,13 +35,43 @@ class ERPRepository extends DbRepository {
     }
 
     async getManagedDepartments(empCode, keyword = null) {
-        let sqlQuery = "SELECT DepartmentCode_NT AS DepartmentCode, DepartmentName_NT AS DepartmentName FROM erpint.vw_Department_ManagerBy_Employee WHERE EmployeeCode = @empCode";
+        let sqlQuery = `
+            SELECT DISTINCT
+                DepartmentCode,
+                DepartmentName,
+                SourceType,
+                SourceCode
+            FROM (
+                SELECT
+                    CAST(DepartmentCode_NT AS NVARCHAR(255)) AS DepartmentCode,
+                    CAST(DepartmentName_NT AS NVARCHAR(255)) AS DepartmentName,
+                    CAST('CONTRACTOR' AS NVARCHAR(255)) AS SourceType,
+                    CAST(DepartmentCode_NT AS NVARCHAR(255)) AS SourceCode
+                FROM erpint.vw_Department_ManagerBy_Employee
+                WHERE EmployeeCode = @empCode
+
+                UNION ALL
+
+                SELECT
+                    CAST(CONCAT('NCC:', ncc.ID_NhaCungCap) AS NVARCHAR(255)) AS DepartmentCode,
+                    CAST(ncc.Ten_NhaCungCap AS NVARCHAR(255)) AS DepartmentName,
+                    CAST('SUPPLIER' AS NVARCHAR(255)) AS SourceType,
+                    CAST(ncc.Maso_NhaCungCap AS NVARCHAR(255)) AS SourceCode
+                FROM TAG_QTKD.dbo.PQ_TaiKhoan_NhaCungCap pq
+                INNER JOIN TAG_QTKD.dbo.DM_NhaCungCap ncc
+                    ON ncc.ID_NhaCungCap = pq.ID_NhaCungCap
+                WHERE pq.ID_TaiKhoanDangNhap = TRY_CAST(@empCode AS SMALLINT)
+                  AND ISNULL(pq.PhanQuyen, 0) = 1
+            ) src
+            WHERE 1 = 1`;
         const params = [{ name: "empCode", type: sql.VarChar(50), value: empCode }];
 
         if (keyword) {
-            sqlQuery += " AND (DepartmentCode_NT LIKE @keyword OR DepartmentName_NT LIKE @keyword)";
+            sqlQuery += " AND (DepartmentCode LIKE @keyword OR DepartmentName LIKE @keyword OR SourceCode LIKE @keyword)";
             params.push({ name: "keyword", type: sql.NVarChar(200), value: `%${keyword}%` });
         }
+
+        sqlQuery += " ORDER BY SourceType, DepartmentName";
 
         return this.query(sqlQuery, params);
     }

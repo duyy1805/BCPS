@@ -442,16 +442,15 @@ export default function ReportCreate() {
                             {managedDepts.length > 0 && (
                                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl animate-in fade-in duration-300">
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 items-center gap-2">
-                                        <Info className="w-3 h-3" /> Đơn vị gây phát sinh (nếu có)
+                                        <Info className="w-3 h-3" /> Đơn vị / nhà cung cấp gây phát sinh (nếu có)
                                     </label>
-                                    <SearchSelect
+                                    <StaticSelect
                                         placeholder="-- Không có / Khác --"
-                                        apiPath={`/employees/${form.empCode}/managed-departments`}
+                                        options={managedDepts}
                                         valueField="DepartmentName"
                                         labelField="DepartmentName"
-                                        // subLabelField="DepartmentCode"
-                                        initialValue={form.occurredDeptCode_NT}
-                                        initialLabel={form.occurredDeptCode_NT}
+                                        subLabelField="SourceCode"
+                                        value={form.occurredDeptCode_NT}
                                         onSelect={dept => setForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentName || '' }))}
                                     />
                                 </div>

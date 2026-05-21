@@ -14,7 +14,8 @@ export default function StaticSelect({
     valueClassName = "",
     controlClassName = "",
     leftIcon: LeftIcon = null,
-    clearable = true
+    clearable = true,
+    searchable = true
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -101,6 +102,7 @@ export default function StaticSelect({
 
             {isOpen && (
                 <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    {searchable && (
                     <div className="p-3 border-b border-slate-100 bg-slate-50/50">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -114,6 +116,7 @@ export default function StaticSelect({
                             />
                         </div>
                     </div>
+                    )}
                     <div className="max-h-60 overflow-y-auto custom-scrollbar">
                         {filteredOptions.length > 0 ? (
                             filteredOptions.map((opt, idx) => (

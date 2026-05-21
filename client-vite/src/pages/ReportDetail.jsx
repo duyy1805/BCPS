@@ -1014,16 +1014,15 @@ export default function ReportDetail() {
                                                     {managedDepts.length > 0 && (
                                                         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                                                                Đơn vị gây phát sinh (nếu có)
+                                                                Đơn vị / nhà cung cấp gây phát sinh (nếu có)
                                                             </label>
-                                                            <SearchSelect
+                                                            <StaticSelect
                                                                 placeholder="-- Không có / Khác --"
-                                                                apiPath={`/employees/${editForm.mainResponsibleEmpCode}/managed-departments`}
+                                                                options={managedDepts}
                                                                 valueField="DepartmentName"
                                                                 labelField="DepartmentName"
-                                                                subLabelField="DepartmentCode"
-                                                                initialValue={editForm.occurredDeptCode_NT}
-                                                                initialLabel={editForm.occurredDeptCode_NT}
+                                                                subLabelField="SourceCode"
+                                                                value={editForm.occurredDeptCode_NT}
                                                                 onSelect={dept => setEditForm(prev => ({ ...prev, occurredDeptCode_NT: dept?.DepartmentName || '' }))}
                                                             />
                                                         </div>
@@ -1280,7 +1279,7 @@ export default function ReportDetail() {
                                                         <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 w-fit">
                                                             <Info className="w-3 h-3" />
                                                             <span>
-                                                                Đơn vị gây phát sinh:{" "}
+                                                                Đơn vị / nhà cung cấp gây phát sinh:{" "}
                                                                 <b className="text-slate-700">
                                                                     {r.OccurredDeptName_NT ||
                                                                         r.OccurredDeptCode_NT}

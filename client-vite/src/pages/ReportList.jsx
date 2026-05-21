@@ -17,6 +17,13 @@ const STATUS_FILTER_OPTIONS = [
     { value: "CLOSED", label: "Đã đóng" },
 ];
 
+const PAGE_SIZE_OPTIONS = [
+    { value: 10, label: "10" },
+    { value: 20, label: "20" },
+    { value: 50, label: "50" },
+    { value: 100, label: "100" },
+];
+
 export default function ReportList() {
     const { showToast } = useUI();
     const { user } = useAuth();
@@ -28,6 +35,22 @@ export default function ReportList() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
     const [meta, setMeta] = useState({ totalRows: 0, totalPages: 0 });
+
+    const normalizeMeta = (rawMeta = {}) => {
+        const normalizedPageSize = Number(rawMeta.pageSize ?? rawMeta.PageSize ?? pageSize);
+        const totalRows = Number(rawMeta.totalRows ?? rawMeta.TotalRows ?? 0);
+
+        return {
+            totalRows,
+            pageNumber: Number(rawMeta.pageNumber ?? rawMeta.PageNumber ?? page),
+            pageSize: normalizedPageSize,
+            totalPages: Number(
+                rawMeta.totalPages ??
+                rawMeta.TotalPages ??
+                Math.ceil(totalRows / Math.max(1, normalizedPageSize))
+            ),
+        };
+    };
 
     const loadData = async (pageNum = page) => {
         setLoading(true);
@@ -44,7 +67,7 @@ export default function ReportList() {
             const { data } = await api.get(`/reports${query}`);
             if (data.success) {
                 setReports(data.data.items || []);
-                setMeta(data.data.meta || { totalRows: 0, totalPages: 0 });
+                setMeta(normalizeMeta(data.data.meta));
             }
         } catch {
             showToast("Lỗi tải danh sách báo cáo", "error");
@@ -252,55 +275,54 @@ export default function ReportList() {
 
             {/* Pagination Control */}
             {!loading && meta.totalRows > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-4 md:gap-8 px-2 py-4 text-slate-600 font-medium border-t border-slate-100 sm:border-none">
+                <div className="sticky bottom-0 z-30 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg shadow-slate-900/10 backdrop-blur text-slate-600 font-medium">
                     {/* Rows per page selector */}
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] md:text-[13px] text-slate-500">Dòng/trang:</span>
-                        <select
+                        <StaticSelect
+                            options={PAGE_SIZE_OPTIONS}
                             value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
+                            onSelect={(opt) => {
+                                setPageSize(Number(opt?.value || 20));
                                 setPage(1);
                             }}
-                            className="bg-transparent border-none outline-none text-[11px] md:text-[13px] font-bold text-slate-700 cursor-pointer focus:ring-0 appearance-none pr-1"
-                        >
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={50}>50</option>
-                            <option value={100}>100</option>
-                        </select>
-                        <div className="w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-slate-500 -ml-1 mt-0.5 pointer-events-none"></div>
+                            className="w-22"
+                            controlClassName="h-10 rounded-xl bg-slate-50 px-3 py-0 text-sm border-slate-200 shadow-inner shadow-slate-100/70"
+                            valueClassName="text-sm"
+                            clearable={false}
+                            searchable={false}
+                        />
                     </div>
 
                     {/* Status Text */}
-                    <div className="text-[11px] md:text-[13px] tracking-tight">
+                    <div className="rounded-xl bg-slate-50 px-4 py-2 text-xs md:text-sm tracking-tight text-slate-500">
                         <span className="font-bold text-slate-800">
                             {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, meta.totalRows)}
                         </span>
-                        <span className="mx-1 text-slate-400">/</span>
+                        <span className="mx-1.5 text-slate-300">/</span>
                         <span className="font-bold text-slate-800">{meta.totalRows}</span>
                     </div>
 
                     {/* Navigation Arrows */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
                         <button
                             type="button"
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="p-2 hover:bg-slate-100 rounded-full disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-90"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:shadow-none transition-all active:scale-95"
                             title="Trang trước"
                         >
-                            <ChevronLeft className="w-5 h-5 text-slate-600" />
+                            <ChevronLeft className="w-5 h-5" />
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
                             disabled={page === meta.totalPages}
-                            className="p-2 hover:bg-slate-100 rounded-full disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-90"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:shadow-none transition-all active:scale-95"
                             title="Trang sau"
                         >
-                            <ChevronRight className="w-5 h-5 text-slate-600" />
+                            <ChevronRight className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
