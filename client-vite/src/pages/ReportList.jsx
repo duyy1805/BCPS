@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Plus, Filter, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Filter, Eye, ChevronLeft, ChevronRight, Building2 } from "lucide-react";
 import api, { formatMoney, formatDate } from "../utils/api";
 import StatusBadge from "../components/ui/StatusBadge";
 import { useUI } from "../context/UIContext";
 import { useAuth } from "../context/AuthContext";
 import StaticSelect from "../components/ui/StaticSelect";
+import SearchSelect from "../components/ui/SearchSelect";
 
 const STATUS_FILTER_OPTIONS = [
     { value: "ALL", label: "Tất cả trạng thái" },
@@ -29,6 +30,7 @@ export default function ReportList() {
     const { user } = useAuth();
     const [keyword, setKeyword] = useState("");
     const [status, setStatus] = useState("");
+    const [pendingResponseDept, setPendingResponseDept] = useState(null);
     const [onlyMyPending, setOnlyMyPending] = useState(true);
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -63,7 +65,18 @@ export default function ReportList() {
             const onlyPending =
                 isApprovalRole && onlyMyPending ? "&onlyNeedMyApproval=true" : "";
 
-            const query = `?pageNumber=${pageNum}&pageSize=${pageSize}&keyword=${encodeURIComponent(keyword)}&statusCode=${status}${onlyPending}`;
+            const queryParams = new URLSearchParams({
+                pageNumber: String(pageNum),
+                pageSize: String(pageSize),
+                keyword,
+                statusCode: status,
+            });
+
+            if (pendingResponseDept?.DepartmentCode) {
+                queryParams.set("pendingResponseDeptCode", pendingResponseDept.DepartmentCode);
+            }
+
+            const query = `?${queryParams.toString()}${onlyPending}`;
             const { data } = await api.get(`/reports${query}`);
             if (data.success) {
                 setReports(data.data.items || []);
@@ -81,12 +94,12 @@ export default function ReportList() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, pageSize]);
 
-    // Reset to page 1 when status or onlyMyPending filters change
+    // Reset to page 1 when status, pending response department, or onlyMyPending filters change
     useEffect(() => {
         setPage(1);
         loadData(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [status, onlyMyPending]);
+    }, [status, pendingResponseDept, onlyMyPending]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -114,7 +127,7 @@ export default function ReportList() {
                             className="block w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm md:text-base"
                         />
                     </div>
-                    <div className="flex flex-row gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                         <StaticSelect
                             options={STATUS_FILTER_OPTIONS}
                             value={status || "ALL"}
@@ -123,6 +136,18 @@ export default function ReportList() {
                             controlClassName="py-2.5 text-sm"
                             leftIcon={Filter}
                             clearable={false}
+                        />
+
+                        <SearchSelect
+                            placeholder="Bộ phận chưa phản hồi"
+                            apiPath="/departments"
+                            valueField="DepartmentCode"
+                            labelField="DepartmentName"
+                            initialValue={pendingResponseDept?.DepartmentCode || ""}
+                            initialLabel={pendingResponseDept?.DepartmentName || ""}
+                            onSelect={(dept) => setPendingResponseDept(dept)}
+                            className="flex-1 md:flex-none md:w-64"
+                            leftIcon={Building2}
                         />
 
                         {(user?.roles?.includes("KHO_MANAGER") ||

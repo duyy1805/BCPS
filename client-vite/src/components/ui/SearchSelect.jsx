@@ -12,7 +12,8 @@ export default function SearchSelect({
     subLabelField = null,
     initialValue = null,
     initialLabel = "",
-    className = ""
+    className = "",
+    leftIcon: LeftIcon = null
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -103,6 +104,7 @@ export default function SearchSelect({
                     if (!isOpen && options.length === 0) fetchOptions("");
                 }}
             >
+                {LeftIcon && <LeftIcon className="w-4 h-4 text-slate-400 mr-3 shrink-0" />}
                 <div className="flex-1 truncate">
                     {selected ? (
                         <span className="font-bold text-slate-800">{selected[labelField]}</span>

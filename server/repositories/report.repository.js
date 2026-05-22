@@ -528,6 +528,7 @@ class ReportRepository extends DbRepository {
             { name: "OnlyMine", type: sql.Bit, value: params.onlyMine === "true" || params.onlyMine === true },
             { name: "OnlyNeedMyResponse", type: sql.Bit, value: params.onlyNeedMyResponse === "true" || params.onlyNeedMyResponse === true },
             { name: "OnlyNeedMyApproval", type: sql.Bit, value: params.onlyNeedMyApproval === "true" || params.onlyNeedMyApproval === true },
+            { name: "PendingResponseDeptCode", type: sql.NVarChar(255), value: params.pendingResponseDeptCode || null },
 
             { name: "SortColumn", type: sql.VarChar(50), value: params.sortColumn || "CreatedAt" },
             { name: "SortDirection", type: sql.VarChar(4), value: params.sortDirection || "DESC" }
