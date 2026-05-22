@@ -107,6 +107,11 @@ export default function ReportList() {
         loadData(1);
     };
 
+    const isOverdue = (report) => {
+        const completedStatuses = ["APPROVED", "CLOSED", "REJECTED"];
+        return Number(report?.OverdueDays || 0) > 0 && !completedStatuses.includes(report?.StatusCode);
+    };
+
     return (
         <div className="max-w-8xl mx-auto space-y-4 md:space-y-6 animate-in fade-in duration-500">
             {/* Toolbar */}
@@ -210,15 +215,18 @@ export default function ReportList() {
                                     </td>
                                 </tr>
                             ) : reports.length > 0 ? (
-                                reports.map((r) => (
+                                reports.map((r) => {
+                                    const overdue = isOverdue(r);
+
+                                    return (
                                     <tr
                                         key={r.ReportID}
-                                        className="hover:bg-slate-50/80 transition-colors group"
+                                        className={`transition-colors group ${overdue ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-slate-50/80"}`}
                                     >
                                         <td className="p-4 md:p-5">
                                             <Link
                                                 to={`/reports/${r.ReportID}`}
-                                                className="font-bold text-slate-800 text-sm md:text-base group-hover:text-blue-600 transition-colors"
+                                                className={`font-bold text-sm md:text-base transition-colors ${overdue ? "text-red-800 group-hover:text-red-700" : "text-slate-800 group-hover:text-blue-600"}`}
                                             >
                                                 {r.ReportNo}
                                             </Link>
@@ -266,6 +274,11 @@ export default function ReportList() {
                                                     text={r.DynamicCurrentStep}
                                                     className="inline-flex justify-center text-[10px] md:text-xs"
                                                 />
+                                                {overdue && (
+                                                    <div className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[9px] md:text-[10px] font-bold text-red-700 leading-tight">
+                                                        Quá hạn {Number(r.OverdueDays)} ngày
+                                                    </div>
+                                                )}
                                                 {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
                                                     <div className="w-full max-w-56 text-center text-[9px] md:text-[10px] text-slate-400 font-medium italic leading-tight whitespace-normal break-words">
                                                         Chờ: {r.PendingDepts}
@@ -282,7 +295,8 @@ export default function ReportList() {
                                             </Link>
                                         </td>
                                     </tr>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td
