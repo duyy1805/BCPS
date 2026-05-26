@@ -391,25 +391,19 @@ export default function ReportDetail() {
                 hasDeptCost: respForm.hasDeptCost,
                 processingResult: "Đã rà soát",
                 responseStatusCode: "RESPONDED",
+                costs: respForm.costs.map((cost) => ({
+                    costTypeId: Number(cost.costTypeId),
+                    costItemDesc: cost.costItemDesc,
+                    note: cost.note || null,
+                    qty: cost.useManual ? null : Number(cost.qty),
+                    unitCost: cost.useManual ? null : Number(cost.unitCost),
+                    manualAmount: cost.useManual ? Number(cost.manualAmount) : null,
+                    useManual: cost.useManual,
+                })),
             });
 
             if (res.data.success) {
-                // Nếu có chi phí, lưu từng dòng vào database
-                if (respForm.hasDeptCost && respForm.costs.length > 0) {
-                    for (const cost of respForm.costs) {
-                        const costPayload = {
-                            departmentCode: respForm.departmentCode,
-                            costTypeId: Number(cost.costTypeId),
-                            costItemDesc: cost.costItemDesc,
-                            note: cost.note || null,
-                            qty: cost.useManual ? null : Number(cost.qty),
-                            unitCost: cost.useManual ? null : Number(cost.unitCost),
-                            manualAmount: cost.useManual ? Number(cost.manualAmount) : null,
-                        };
-                        await api.post(`/reports/${id}/cost-lines`, costPayload);
-                    }
-                }
-                showToast("Ghi phản hồi thành công!", "success");
+                showToast(res.data.message || "Ghi phản hồi thành công!", "success");
                 setShowRespModal(false);
                 setRespForm({
                     departmentCode: "",

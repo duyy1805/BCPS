@@ -140,17 +140,76 @@ class ReportService {
         return ok(result.recordsets[0]?.[0] || null);
     }
 
+    toNullableNumber(value) {
+        if (value === undefined || value === null || value === "") return null;
+        const numberValue = Number(value);
+        return Number.isFinite(numberValue) ? numberValue : null;
+    }
+
+    normalizeResponseCosts(costs) {
+        if (!Array.isArray(costs)) return [];
+
+        return costs
+            .map((cost) => {
+                const useManual = Boolean(cost.useManual);
+                return {
+                    costTypeId: this.toNullableNumber(cost.costTypeId),
+                    costItemDesc: cost.costItemDesc || null,
+                    qty: useManual ? null : this.toNullableNumber(cost.qty),
+                    unitCost: useManual ? null : this.toNullableNumber(cost.unitCost),
+                    manualAmount: useManual ? this.toNullableNumber(cost.manualAmount) : null,
+                    note: cost.note || null
+                };
+            })
+            .filter((cost) => cost.costTypeId && cost.costItemDesc);
+    }
+
     async saveResponse(reportId, body, currentUser) {
+        const responseCosts = this.normalizeResponseCosts(body.costs);
+
         await this.repo.saveResponse(reportId, {
             ...body,
             responderEmpCode: currentUser.employeeCode
         });
+
+        for (const cost of responseCosts) {
+            await this.repo.addCostLine(reportId, {
+                ...cost,
+                departmentCode: body.departmentCode,
+                createdByEmpCode: currentUser.employeeCode,
+                createdByEmpName: currentUser.userName || currentUser.employeeCode
+            });
+        }
+
+        let autoSubmitted = false;
+        const detailAfterSave = await this.repo.getDetail(reportId);
+        const hasPendingFeedback = (detailAfterSave.coordDepartments || [])
+            .some((dept) => dept.FeedbackStatusCode !== "RESPONDED");
+
+        if (detailAfterSave.report?.StatusCode === "WAITING_FEEDBACK" && !hasPendingFeedback) {
+            await this.repo.submitApproval(
+                reportId,
+                currentUser.employeeCode,
+                currentUser.userName || currentUser.employeeCode,
+                { bypassCreatorCheck: true, isAutoSubmit: true }
+            );
+            autoSubmitted = true;
+        }
+
         await this.notifySafely("saveResponse", async () => {
             const detail = await this.repo.getDetail(reportId);
             await this.notificationService.createResponseSaved(detail, body, currentUser.employeeCode);
+            if (autoSubmitted) {
+                await this.notificationService.createApprovalSubmitted(detail, currentUser.employeeCode);
+            }
         });
 
-        return ok({ reportId, departmentCode: body.departmentCode }, "Đã lưu phản hồi.");
+        return ok(
+            { reportId, departmentCode: body.departmentCode, autoSubmitted },
+            autoSubmitted
+                ? "Đã lưu phản hồi và tự động trình phê duyệt."
+                : "Đã lưu phản hồi."
+        );
     }
 
     async addCostLine(reportId, body, currentUser) {

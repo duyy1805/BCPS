@@ -460,20 +460,22 @@ class ReportRepository extends DbRepository {
             { name: "DepartmentCode", type: sql.NVarChar(255), value: params.departmentCode },
             { name: "CostTypeID", type: sql.Int, value: params.costTypeId },
             { name: "CostItemDesc", type: sql.NVarChar(500), value: params.costItemDesc },
-            { name: "Qty", type: sql.Decimal(18, 3), value: params.qty || null },
-            { name: "UnitCost", type: sql.Decimal(18, 2), value: params.unitCost || null },
-            { name: "ManualAmount", type: sql.Decimal(18, 2), value: params.manualAmount || null },
+            { name: "Qty", type: sql.Decimal(18, 3), value: params.qty ?? null },
+            { name: "UnitCost", type: sql.Decimal(18, 2), value: params.unitCost ?? null },
+            { name: "ManualAmount", type: sql.Decimal(18, 2), value: params.manualAmount ?? null },
             { name: "Note", type: sql.NVarChar(1000), value: params.note || null },
             { name: "CreatedByEmpCode", type: sql.VarChar(50), value: params.createdByEmpCode },
             { name: "CreatedByEmpName", type: sql.NVarChar(255), value: params.createdByEmpName }
         ]);
     }
 
-    async submitApproval(reportId, empCode, empName) {
+    async submitApproval(reportId, empCode, empName, options = {}) {
         return this.executeStoredProcedure("ps.usp_Report_SubmitForApproval", [
             { name: "ReportID", type: sql.BigInt, value: reportId },
             { name: "ActionByEmpCode", type: sql.VarChar(50), value: empCode },
-            { name: "ActionByEmpName", type: sql.NVarChar(255), value: empName }
+            { name: "ActionByEmpName", type: sql.NVarChar(255), value: empName },
+            { name: "BypassCreatorCheck", type: sql.Bit, value: Boolean(options.bypassCreatorCheck) },
+            { name: "IsAutoSubmit", type: sql.Bit, value: Boolean(options.isAutoSubmit) }
         ]);
     }
 
