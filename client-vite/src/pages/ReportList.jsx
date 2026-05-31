@@ -219,82 +219,82 @@ export default function ReportList() {
                                     const overdue = isOverdue(r);
 
                                     return (
-                                    <tr
-                                        key={r.ReportID}
-                                        className={`transition-colors group ${overdue ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-slate-50/80"}`}
-                                    >
-                                        <td className="p-4 md:p-5">
-                                            <Link
-                                                to={`/reports/${r.ReportID}`}
-                                                className={`font-bold text-sm md:text-base transition-colors ${overdue ? "text-red-800 group-hover:text-red-700" : "text-slate-800 group-hover:text-blue-600"}`}
-                                            >
-                                                {r.ReportNo}
-                                            </Link>
-                                            <div className="text-[10px] md:text-xs text-slate-500 mt-1 font-medium">
-                                                {formatDate(r.CreatedAt, false)}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 md:p-5 hidden sm:table-cell">
-                                            <div className="space-y-1">
-                                                {(r.Plans || []).length > 0 ? (
-                                                    r.Plans.map((plan) => (
-                                                        <div key={plan.PlanSelectKey} className="leading-tight">
-                                                            <div className="font-bold text-slate-700 text-sm">
-                                                                {plan.OrderCode || plan.PlanNo || "N/A"}
+                                        <tr
+                                            key={r.ReportID}
+                                            className={`transition-colors group ${overdue ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-slate-50/80"}`}
+                                        >
+                                            <td className="p-4 md:p-5">
+                                                <Link
+                                                    to={`/reports/${r.ReportID}`}
+                                                    className={`font-bold text-sm md:text-base transition-colors ${overdue ? "text-red-800 group-hover:text-red-700" : "text-slate-800 group-hover:text-blue-600"}`}
+                                                >
+                                                    {r.ReportNo}
+                                                </Link>
+                                                <div className="text-[10px] md:text-xs text-slate-500 mt-1 font-medium">
+                                                    {formatDate(r.CreatedAt, false)}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 md:p-5 hidden sm:table-cell">
+                                                <div className="space-y-1">
+                                                    {(r.Plans || []).length > 0 ? (
+                                                        r.Plans.map((plan) => (
+                                                            <div key={plan.PlanSelectKey} className="leading-tight">
+                                                                <div className="font-bold text-slate-700 text-sm">
+                                                                    {plan.OrderCode || plan.PlanNo || "N/A"}
+                                                                </div>
+                                                                <div className="text-xs text-slate-500 truncate max-w-37.5 lg:max-w-50" title={plan.ProductName}>
+                                                                    {plan.ProductName || plan.PlanNo || ""}
+                                                                </div>
                                                             </div>
-                                                            <div className="text-xs text-slate-500 truncate max-w-37.5 lg:max-w-50" title={plan.ProductName}>
-                                                                {plan.ProductName || plan.PlanNo || ""}
-                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="text-sm text-slate-400 italic">Không có kế hoạch</div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 md:p-5 font-medium text-slate-700 text-sm">
+                                                {r.ExceptionTypeName}
+                                                <div className="md:hidden text-[10px] text-slate-400 mt-1 font-bold">
+                                                    {r.HasCost ? formatMoney(r.EstimatedTotalCost) : ""}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 md:p-5 font-medium text-slate-700 text-sm">
+                                                {r.CreatedByEmpName}
+                                            </td>
+                                            <td className="p-4 md:p-5 font-medium text-slate-700 text-sm hidden lg:table-cell">
+                                                {r.ResponsibleDeptName || r.ResponsibleDeptCode}
+                                            </td>
+                                            <td className="p-4 md:p-5 text-right font-bold text-red-600 text-sm hidden md:table-cell">
+                                                {r.HasCost ? formatMoney(r.EstimatedTotalCost) : "-"}
+                                            </td>
+                                            <td className="p-4 md:p-5 text-center align-middle">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <StatusBadge
+                                                        status={r.StatusCode}
+                                                        text={r.DynamicCurrentStep}
+                                                        className="inline-flex justify-center text-[10px] md:text-xs"
+                                                    />
+                                                    {overdue && (
+                                                        <div className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[9px] md:text-[10px] font-bold text-red-700 leading-tight">
+                                                            Quá hạn {Number(r.OverdueDays)} ngày
                                                         </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="text-sm text-slate-400 italic">Không có kế hoạch</div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 md:p-5 font-medium text-slate-700 text-sm">
-                                            {r.ExceptionTypeName}
-                                            <div className="md:hidden text-[10px] text-slate-400 mt-1 font-bold">
-                                                {r.HasCost ? formatMoney(r.EstimatedTotalCost) : ""}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 md:p-5 font-medium text-slate-700 text-sm">
-                                            {r.CreatedByEmpName}
-                                        </td>
-                                        <td className="p-4 md:p-5 font-medium text-slate-700 text-sm hidden lg:table-cell">
-                                            {r.ResponsibleDeptName || r.ResponsibleDeptCode}
-                                        </td>
-                                        <td className="p-4 md:p-5 text-right font-bold text-red-600 text-sm hidden md:table-cell">
-                                            {r.HasCost ? formatMoney(r.EstimatedTotalCost) : "-"}
-                                        </td>
-                                        <td className="p-4 md:p-5 text-center align-middle">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <StatusBadge
-                                                    status={r.StatusCode}
-                                                    text={r.DynamicCurrentStep}
-                                                    className="inline-flex justify-center text-[10px] md:text-xs"
-                                                />
-                                                {overdue && (
-                                                    <div className="inline-flex items-center justify-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[9px] md:text-[10px] font-bold text-red-700 leading-tight">
-                                                        Quá hạn {Number(r.OverdueDays)} ngày
-                                                    </div>
-                                                )}
-                                                {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
-                                                    <div className="w-full max-w-56 text-center text-[9px] md:text-[10px] text-slate-400 font-medium italic leading-tight whitespace-normal break-words">
-                                                        Chờ: {r.PendingDepts}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 md:p-5 text-center">
-                                            <Link
-                                                to={`/reports/${r.ReportID}`}
-                                                className="inline-flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                <Eye className="w-5 h-5" />
-                                            </Link>
-                                        </td>
-                                    </tr>
+                                                    )}
+                                                    {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
+                                                        <div className="w-full max-w-56 text-center text-[9px] md:text-[10px] text-slate-400 font-medium italic leading-tight whitespace-normal break-words">
+                                                            Chờ: {r.PendingDepts}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 md:p-5 text-center">
+                                                <Link
+                                                    to={`/reports/${r.ReportID}`}
+                                                    className="inline-flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                >
+                                                    <Eye className="w-5 h-5" />
+                                                </Link>
+                                            </td>
+                                        </tr>
                                     );
                                 })
                             ) : (
@@ -330,6 +330,7 @@ export default function ReportList() {
                             valueClassName="text-sm"
                             clearable={false}
                             searchable={false}
+                            menuPlacement="top"
                         />
                     </div>
 

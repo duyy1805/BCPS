@@ -245,7 +245,7 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                     <tbody>
                         <tr>
                             <td style={styles.tdCenter}>1</td>
-                            <td style={styles.td}>{report.OccurredDeptName_NT || report.OccurredDepartmentName || '...'}</td>
+                            <td style={styles.td}>{report.Ma_NhaThau ?? report.OccurredDeptName_NT ?? report.OccurredDepartmentName ?? '...'}</td>
                             <td style={styles.td}>{plans.map((plan) => plan.OrderCode).filter(Boolean).join(", ") || '...'}</td>
                             <td style={styles.tdCenter}>{plans.map((plan) => plan.ProductCode).filter(Boolean).join(", ") || '...'}</td>
                             <td style={styles.td}>{plans.map((plan) => plan.ProductName).filter(Boolean).join(", ") || '...'}</td>

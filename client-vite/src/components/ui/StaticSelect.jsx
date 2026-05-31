@@ -15,7 +15,8 @@ export default function StaticSelect({
     controlClassName = "",
     leftIcon: LeftIcon = null,
     clearable = true,
-    searchable = true
+    searchable = true,
+    menuPlacement = "bottom"
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -101,21 +102,28 @@ export default function StaticSelect({
             </div>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div
+                    className={cn(
+                        "absolute z-50 w-full bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200",
+                        menuPlacement === "top"
+                            ? "bottom-full mb-2 slide-in-from-bottom-2"
+                            : "mt-2 slide-in-from-top-2"
+                    )}
+                >
                     {searchable && (
-                    <div className="p-3 border-b border-slate-100 bg-slate-50/50">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input
-                                autoFocus
-                                type="text"
-                                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                                placeholder="Gõ để lọc..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
+                        <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                                    placeholder="Gõ để lọc..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                            </div>
                         </div>
-                    </div>
                     )}
                     <div className="max-h-60 overflow-y-auto custom-scrollbar">
                         {filteredOptions.length > 0 ? (
