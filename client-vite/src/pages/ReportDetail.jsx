@@ -569,20 +569,30 @@ export default function ReportDetail() {
     const totalCost = costLines.reduce((s, c) => s + (Number(c.Amount) || 0), 0);
 
     return (
-        <div className="max-w-8xl mx-auto space-y-6 pb-12">
+        <div className="max-w-8xl mx-auto space-y-4 md:space-y-6 pb-20 md:pb-12">
+            <div className="flex items-center justify-between gap-2">
+                <Link
+                    to="/reports"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-blue-700 active:scale-95"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Quay lại danh sách
+                </Link>
+            </div>
+
             {/* Header Card */}
             <div
                 className={cn(
-                    "p-6 rounded-2xl border shadow-sm flex items-center justify-between flex-wrap gap-4 ",
+                    "p-4 md:p-6 rounded-2xl border shadow-sm flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center sm:gap-4 ",
                     r.HasCost
                         ? "bg-linear-to-r from-white to-orange-50/30 border-orange-200 shadow-orange-100/50"
                         : "bg-white border-slate-200",
                 )}
             >
                 <div>
-                    <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3 flex-wrap">
+                    <h1 className="flex flex-wrap items-center gap-2 text-lg font-black tracking-tight text-slate-800 md:gap-3 md:text-2xl">
                         {r.ReportNo}
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                             <StatusBadge status={r.StatusCode} text={r.DynamicCurrentStep} />
                             {r.HasCost && (
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 text-white rounded-full text-[10px] font-black tracking-tighter shadow-sm animate-pulse-subtle">
@@ -603,7 +613,7 @@ export default function ReportDetail() {
                     </div>
                 </div>
 
-                <div className="flex gap-3 flex-wrap">
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3">
                     {/* ── Action Buttons (dựa trên quyền từ API) ── */}
 
                     {/* Chỉnh sửa / Trình phản hồi: REPORTER khi phiếu ở DRAFT / NEED_SUPPLEMENT */}
@@ -612,7 +622,7 @@ export default function ReportDetail() {
                             {actions?.CanEditDraft && !isEditing && (
                                 <button
                                     onClick={startEditing}
-                                    className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                    className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-slate-100 hover:bg-slate-200 text-slate-700"
                                 >
                                     <Plus className="w-4 h-4 mr-2" /> Chỉnh Sửa
                                 </button>
@@ -620,7 +630,7 @@ export default function ReportDetail() {
                             {actions?.CanSubmit && !isEditing && (
                                 <button
                                     onClick={submitReport}
-                                    className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
+                                    className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
                                 >
                                     <Send className="w-4 h-4 mr-2" /> Trình Phản Hồi
                                 </button>
@@ -629,18 +639,18 @@ export default function ReportDetail() {
                     )}
 
                     {isEditing && (
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => setIsEditing(false)}
                                 disabled={saving}
-                                className="px-4 py-2 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                                className="px-3 sm:px-4 py-2 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
                             >
                                 Hủy
                             </button>
                             <button
                                 onClick={saveEdit}
                                 disabled={saving}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm flex items-center transition-all active:scale-95 disabled:opacity-50"
+                                className="justify-center px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm flex items-center transition-all active:scale-95 disabled:opacity-50"
                             >
                                 <Save className="w-4 h-4 mr-2" />{" "}
                                 {saving ? "Đang lưu..." : "Lưu Thay Đổi"}
@@ -651,7 +661,7 @@ export default function ReportDetail() {
                     {actions?.CanDeleteDraft && !isEditing && (
                         <button
                             onClick={deleteDraftAction}
-                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600"
+                            className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-red-50 hover:bg-red-100 text-red-600"
                         >
                             <Trash2 className="w-4 h-4 mr-2" /> Xóa
                         </button>
@@ -661,7 +671,7 @@ export default function ReportDetail() {
                     {actions?.CanRespond && (
                         <button
                             onClick={openResponseModal}
-                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200"
+                            className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200"
                         >
                             <MessageSquare className="w-4 h-4 mr-2" /> Ghi Phản Hồi
                         </button>
@@ -673,7 +683,7 @@ export default function ReportDetail() {
                         actions?.CanSubmitApproval && (
                             <button
                                 onClick={submitApprovalReq}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-cyan-600 hover:bg-cyan-700 text-white shadow-cyan-200"
+                                className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-cyan-600 hover:bg-cyan-700 text-white shadow-cyan-200"
                             >
                                 <CheckSquare className="w-4 h-4 mr-2" /> Trình Phê Duyệt
                             </button>
@@ -684,19 +694,19 @@ export default function ReportDetail() {
                         <>
                             <button
                                 onClick={() => approveReport("RETURNED")}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-slate-100 hover:bg-slate-200 text-slate-700"
                             >
                                 Trả Lại
                             </button>
                             {/* <button
                                 onClick={() => approveReport("REJECTED")}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600"
+                                className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-red-50 hover:bg-red-100 text-red-600"
                             >
                                 <XCircle className="w-4 h-4 mr-2" /> Từ Chối
                             </button> */}
                             <button
                                 onClick={() => approveReport("APPROVED")}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-green-600 hover:bg-green-700 text-white shadow-green-200"
+                                className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-green-600 hover:bg-green-700 text-white shadow-green-200"
                             >
                                 <CheckCircle className="w-4 h-4 mr-2" /> Phê Duyệt
                             </button>
@@ -708,19 +718,19 @@ export default function ReportDetail() {
                         <>
                             <button
                                 onClick={() => approveReport("RETURNED")}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-slate-100 hover:bg-slate-200 text-slate-700"
                             >
                                 Trả Lại
                             </button>
                             <button
                                 onClick={() => approveReport("REJECTED")}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-red-50 hover:bg-red-100 text-red-600"
+                                className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-red-50 hover:bg-red-100 text-red-600"
                             >
                                 <XCircle className="w-4 h-4 mr-2" /> Từ Chối
                             </button>
                             <button
                                 onClick={() => approveReport("FORWARD_BGD")}
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
+                                className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
                             >
                                 <Send className="w-4 h-4 mr-2" /> Trình Ban giám đốc
                             </button>
@@ -731,7 +741,7 @@ export default function ReportDetail() {
                     {actions?.CanClose && (
                         <button
                             onClick={closeReportAction}
-                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-200"
+                            className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-200"
                         >
                             <Archive className="w-4 h-4 mr-2" /> Xác Nhận &amp; Đóng
                         </button>
@@ -740,7 +750,7 @@ export default function ReportDetail() {
                     {/* Nút In báo cáo (Luôn hiển thị nếu có dữ liệu) */}
                     <button
                         onClick={handlePrint}
-                        className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 bg-slate-800 hover:bg-slate-900 text-white shadow-slate-200"
+                        className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-slate-800 hover:bg-slate-900 text-white shadow-slate-200"
                     >
                         <Printer className="w-4 h-4 mr-2" /> In Báo Cáo
                     </button>
@@ -748,7 +758,7 @@ export default function ReportDetail() {
             </div>
 
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 md:gap-6">
                 {/* Left Content */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -779,7 +789,7 @@ export default function ReportDetail() {
                                 <div className="space-y-6 animate-in fade-in">
                                     {isEditing ? (
                                         <div className="space-y-6">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                                                 <div className="space-y-4">
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
@@ -797,7 +807,7 @@ export default function ReportDetail() {
                                                             rows="2"
                                                         />
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
                                                         <div>
                                                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                                                                 Mức độ (*)
@@ -839,7 +849,7 @@ export default function ReportDetail() {
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
                                                         <div>
                                                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                                                                 Loại phát sinh
@@ -909,7 +919,7 @@ export default function ReportDetail() {
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-3">
                                                             Mức độ ảnh hưởng
                                                         </label>
-                                                        <div className="grid grid-cols-2 gap-2">
+                                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                                             {masterData?.impactTypes.map((imp) => {
                                                                 const val =
                                                                     imp.ImpactCode || imp.Code || imp.Value;
@@ -1116,8 +1126,8 @@ export default function ReportDetail() {
                                                         onSelect={addEditPlan}
                                                     />
                                                 )}
-                                                <div className="overflow-hidden rounded-xl border border-slate-200">
-                                                    <table className="w-full text-xs">
+                                                <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
+                                                    <table className="w-full min-w-[640px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
                                                                 <th className="px-3 py-2 text-left">Mã kế hoạch</th>
@@ -1159,8 +1169,8 @@ export default function ReportDetail() {
                                                 <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
                                                     Phản hồi các bộ phận
                                                 </h3>
-                                                <div className="overflow-hidden rounded-xl border border-slate-200">
-                                                    <table className="w-full text-xs">
+                                                <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
+                                                    <table className="w-full min-w-[640px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
                                                                 <th className="px-3 py-2 text-left">Bộ phận</th>
@@ -1218,7 +1228,7 @@ export default function ReportDetail() {
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="grid grid-cols-5 gap-4">
+                                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 md:gap-4">
                                                 <Card
                                                     label="Ngày phát sinh"
                                                     value={formatDate(
@@ -1248,7 +1258,7 @@ export default function ReportDetail() {
                                                     icon={HelpCircle}
                                                 />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                                                 <div className="space-y-4">
                                                     <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
                                                         Nội dung chi tiết
@@ -1325,7 +1335,7 @@ export default function ReportDetail() {
                                                                 Chi phí dự kiến của đơn vị
                                                             </h3>
                                                             <div className="bg-orange-50/30 rounded-xl border border-orange-100 overflow-hidden shadow-sm">
-                                                                <table className="w-full text-xs">
+                                                                <table className="w-full min-w-[640px] text-xs">
                                                                     <thead className="bg-orange-50 text-orange-700/60 font-bold border-b border-orange-100">
                                                                         <tr>
                                                                             <th className="px-3 py-2 text-left">Nội dung</th>
@@ -1361,8 +1371,8 @@ export default function ReportDetail() {
                                                 <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
                                                     Danh sách kế hoạch ERP
                                                 </h3>
-                                                <div className="overflow-hidden rounded-xl border border-slate-200">
-                                                    <table className="w-full text-xs">
+                                                <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
+                                                    <table className="w-full min-w-[640px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
                                                                 <th className="px-3 py-2 text-left">Mã kế hoạch</th>
@@ -1402,8 +1412,8 @@ export default function ReportDetail() {
                                                 <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider border-b pb-2">
                                                     Phản hồi các bộ phận
                                                 </h3>
-                                                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                                                    <table className="w-full min-w-225 text-xs">
+                                                <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
+                                                    <table className="w-full min-w-[900px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
                                                                 <th className="px-3 py-2 text-left">Bộ phận</th>
@@ -1477,8 +1487,8 @@ export default function ReportDetail() {
                                         </p>
                                     ) : (
                                         <>
-                                            <div className="overflow-x-auto rounded-xl border border-slate-200">
-                                                <table className="w-full text-sm">
+                                            <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
+                                                <table className="w-full min-w-[640px] text-sm">
                                                     <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider">
                                                         <tr>
                                                             <th className="text-left px-4 py-3 font-bold">
@@ -1552,7 +1562,7 @@ export default function ReportDetail() {
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                                             {data.attachments.map((file, idx) => {
                                                 // 1. Trích xuất tên file thực tế từ đường dẫn vật lý (xử lý cả \ của Windows và / của Linux)
                                                 const actualFileName =
@@ -1592,7 +1602,7 @@ export default function ReportDetail() {
                                                                 Bởi: {file.UploadedByEmpName}
                                                             </div>
                                                         </div>
-                                                        <div className="flex gap-2">
+                                                        <div className="grid grid-cols-2 gap-2">
                                                             {(['jpg', 'jpeg', 'png', 'gif', 'svg', 'pdf'].some(ext => file.FileName?.toLowerCase().endsWith(ext))) && (
                                                                 <button
                                                                     onClick={() => setPreviewFile({ url: fileUrl, name: file.FileName })}
@@ -1623,7 +1633,7 @@ export default function ReportDetail() {
 
                 {/* Right — History Timeline */}
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                             <Clock className="w-32 h-32" />
                         </div>
@@ -1664,13 +1674,13 @@ export default function ReportDetail() {
             ══════════════════════════════════════════════════════════ */}
             {showRespModal && (
                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in p-4 overflow-y-auto">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-8 my-auto border border-slate-100">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl md:rounded-3xl shadow-2xl p-4 md:p-8 my-auto border border-slate-100 max-h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
                         <h3 className="text-xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4 flex items-center">
                             <MessageSquare className="w-5 h-5 mr-2 text-blue-600" />
                             Ghi Phản Hồi Từ Bộ Phận Liên Quan
                         </h3>
                         <div className="space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
                                 <div>
                                     <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">
                                         Bộ Phận Phản Hồi
@@ -1749,7 +1759,7 @@ export default function ReportDetail() {
                                 ></textarea>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
                                 <div>
                                     <label className="block text-[11px] font-bold tracking-widest text-slate-500 uppercase mb-2">
                                         Đánh giá Root Cause
@@ -1796,7 +1806,7 @@ export default function ReportDetail() {
                                     {/* Mảng chi phí đã thêm */}
                                     {respForm.costs.length > 0 && (
                                         <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden mb-4">
-                                            <table className="w-full text-xs">
+                                            <table className="w-full min-w-[640px] text-xs">
                                                 <thead className="bg-slate-100 text-slate-600 font-bold">
                                                     <tr>
                                                         <th className="px-3 py-2 text-left">
@@ -1837,7 +1847,7 @@ export default function ReportDetail() {
 
                                     {/* Form nhập dòng chi phí mới */}
                                     <div className="bg-slate-50/50 p-4 rounded-2xl border border-dashed border-slate-300 space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                                             <div>
                                                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
                                                     Loại Chi Phí (*)
@@ -1879,7 +1889,7 @@ export default function ReportDetail() {
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-2">
+                                        <div className="grid grid-cols-2 gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() =>
@@ -1911,7 +1921,7 @@ export default function ReportDetail() {
                                         </div>
 
                                         {!costForm.useManual ? (
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
                                                 <div>
                                                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
                                                         Số Lượng
@@ -2007,7 +2017,7 @@ export default function ReportDetail() {
                             <div className="p-2 bg-blue-600 text-white rounded-lg">
                                 <Paperclip className="w-5 h-5" />
                             </div>
-                            <span className="font-bold text-white text-sm truncate max-w-md">
+                            <span className="font-bold text-white text-sm truncate max-w-[55vw] md:max-w-md">
                                 {previewFile.name}
                             </span>
                         </div>

@@ -70,9 +70,9 @@ export const UIProvider = ({ children }) => {
             
             {/* Modal Renderer */}
             {modal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 md:p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6">
+                        <div className="p-4 md:p-6">
                             <h3 className="text-xl font-bold text-slate-800 mb-2">{modal.title}</h3>
                             {modal.type === 'confirm' && (
                                 <p className="text-slate-600 mb-6">{modal.message}</p>
@@ -86,7 +86,7 @@ export const UIProvider = ({ children }) => {
                                     id="prompt-input"
                                 />
                             )}
-                            <div className="flex justify-end gap-3">
+                            <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
                                 <button 
                                     onClick={modal.onCancel}
                                     className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-all"
@@ -112,7 +112,7 @@ export const UIProvider = ({ children }) => {
             )}
 
             {/* Toast Renderer */}
-            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+            <div className="fixed bottom-3 left-3 right-3 z-50 flex flex-col gap-2 pointer-events-none sm:bottom-4 sm:left-auto sm:right-4">
                 {toasts.map(toast => {
                     const icons = {
                         success: <CheckCircle className="w-5 h-5 text-emerald-500" />,
@@ -121,7 +121,7 @@ export const UIProvider = ({ children }) => {
                         info: <Info className="w-5 h-5 text-blue-500" />
                     };
                     return (
-                        <div key={toast.id} className="pointer-events-auto bg-white border border-slate-100 shadow-lg rounded-xl p-4 flex items-center gap-3 animate-in slide-in-from-right-8 duration-300 min-w-64">
+                        <div key={toast.id} className="pointer-events-auto w-full bg-white border border-slate-100 shadow-lg rounded-xl p-3 sm:p-4 flex items-center gap-3 animate-in slide-in-from-right-8 duration-300 sm:min-w-64 sm:w-auto">
                             {icons[toast.type] || icons.info}
                             <span className="font-medium text-slate-700">{toast.message}</span>
                         </div>

@@ -154,7 +154,6 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
     const bgdApprover = approvals?.find(a => a.ApprovalRoleCode === 'BGD' && a.DecisionCode !== 'PENDING')
         || approvals?.find(a => a.ApprovalRoleCode === 'BGD');
 
-    const finalApprover = approvals?.filter(a => a.DecisionCode === 'APPROVED').pop();
 
     // Total Cost
     const totalCostAmount = costLines?.reduce((sum, line) => sum + (Number(line.Amount) || 0), 0) || 0;

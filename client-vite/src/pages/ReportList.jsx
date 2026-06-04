@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, Plus, Filter, Eye, ChevronLeft, ChevronRight, Building2 } from "lucide-react";
 import api, { formatMoney, formatDate } from "../utils/api";
 import StatusBadge from "../components/ui/StatusBadge";
-import { useUI } from "../context/UIContext";
+import { cn, useUI } from "../context/UIContext";
 import { useAuth } from "../context/AuthContext";
 import StaticSelect from "../components/ui/StaticSelect";
 import SearchSelect from "../components/ui/SearchSelect";
@@ -188,10 +188,98 @@ export default function ReportList() {
                 </Link>
             </div>
 
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+                {loading ? (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm font-medium text-slate-500 shadow-sm">
+                        Đang tải danh sách báo cáo...
+                    </div>
+                ) : reports.length > 0 ? (
+                    reports.map((r) => {
+                        const overdue = isOverdue(r);
+
+                        return (
+                            <Link
+                                key={r.ReportID}
+                                to={`/reports/${r.ReportID}`}
+                                className={cn(
+                                    "block rounded-2xl border bg-white p-4 shadow-sm transition active:scale-[0.99]",
+                                    overdue ? "border-red-200 bg-red-50/40" : "border-slate-200 hover:border-blue-200"
+                                )}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className={cn("truncate text-base font-black", overdue ? "text-red-800" : "text-slate-900")}>{r.ReportNo}</div>
+                                        <div className="mt-1 text-xs font-medium text-slate-500">{formatDate(r.CreatedAt, false)}</div>
+                                    </div>
+                                    <StatusBadge
+                                        status={r.StatusCode}
+                                        text={r.DynamicCurrentStep}
+                                        className="shrink-0 justify-center text-[10px]"
+                                    />
+                                </div>
+
+                                <div className="mt-3 space-y-2 text-sm text-slate-700">
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Loại phát sinh</div>
+                                        <div className="font-bold">{r.ExceptionTypeName || "--"}</div>
+                                    </div>
+
+                                    {(r.Plans || []).length > 0 && (
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Kế hoạch / sản phẩm</div>
+                                            <div className="space-y-1">
+                                                {(r.Plans || []).slice(0, 2).map((plan) => (
+                                                    <div key={plan.PlanSelectKey} className="rounded-xl bg-slate-50 px-3 py-2">
+                                                        <div className="font-bold text-slate-800">{plan.OrderCode || plan.PlanNo || "N/A"}</div>
+                                                        <div className="truncate text-xs text-slate-500">{plan.ProductName || plan.PlanNo || ""}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="rounded-xl bg-slate-50 px-3 py-2">
+                                            <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Người tạo</div>
+                                            <div className="truncate font-bold">{r.CreatedByEmpName || "--"}</div>
+                                        </div>
+                                        <div className="rounded-xl bg-slate-50 px-3 py-2">
+                                            <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Chi phí</div>
+                                            <div className="truncate font-black text-red-600">{r.HasCost ? formatMoney(r.EstimatedTotalCost) : "-"}</div>
+                                        </div>
+                                    </div>
+
+                                    {(r.ResponsibleDeptName || r.ResponsibleDeptCode) && (
+                                        <div className="rounded-xl bg-slate-50 px-3 py-2">
+                                            <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Bộ phận chịu trách nhiệm</div>
+                                            <div className="font-bold">{r.ResponsibleDeptName || r.ResponsibleDeptCode}</div>
+                                        </div>
+                                    )}
+
+                                    {overdue && (
+                                        <div className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-black text-red-700">
+                                            Quá hạn {Number(r.OverdueDays)} ngày
+                                        </div>
+                                    )}
+                                    {r.StatusCode === "WAITING_FEEDBACK" && r.PendingDepts && (
+                                        <div className="text-xs font-medium italic text-slate-500">Chờ: {r.PendingDepts}</div>
+                                    )}
+                                </div>
+                            </Link>
+                        );
+                    })
+                ) : (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm font-medium text-slate-500 shadow-sm">
+                        Không tìm thấy báo cáo nào phù hợp.
+                    </div>
+                )}
+            </div>
+
             {/* Table */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden md:block">
                 <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left min-w-175 md:min-w-0">
+                    <table className="w-full min-w-[760px] text-left">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                             <tr>
                                 <th className="p-4 md:p-5 font-bold tracking-wide text-xs md:text-sm">Mã BCPS / Ngày</th>
@@ -314,10 +402,10 @@ export default function ReportList() {
 
             {/* Pagination Control */}
             {!loading && meta.totalRows > 0 && (
-                <div className="sticky bottom-0 z-30 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg shadow-slate-900/10 backdrop-blur text-slate-600 font-medium">
+                <div className="md:sticky md:bottom-0 z-30 flex items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white/95 px-2.5 py-2 shadow-sm shadow-slate-900/5 backdrop-blur text-slate-600 font-medium md:px-4 md:py-3 md:shadow-lg md:shadow-slate-900/10">
                     {/* Rows per page selector */}
-                    <div className="flex items-center gap-3">
-                        <span className="text-[11px] md:text-[13px] text-slate-500">Dòng/trang:</span>
+                    <div className="flex min-w-0 items-center gap-1.5 md:gap-3">
+                        <span className="hidden text-[11px] text-slate-500 sm:inline md:text-[13px]">Dòng/trang:</span>
                         <StaticSelect
                             options={PAGE_SIZE_OPTIONS}
                             value={pageSize}
@@ -325,9 +413,9 @@ export default function ReportList() {
                                 setPageSize(Number(opt?.value || 20));
                                 setPage(1);
                             }}
-                            className="w-22"
-                            controlClassName="h-10 rounded-xl bg-slate-50 px-3 py-0 text-sm border-slate-200 shadow-inner shadow-slate-100/70"
-                            valueClassName="text-sm"
+                            className="w-16 md:w-22"
+                            controlClassName="h-8 min-h-8 rounded-xl bg-slate-50 px-2 py-0 text-xs border-slate-200 shadow-inner shadow-slate-100/70 md:h-10 md:text-sm md:px-3"
+                            valueClassName="text-xs md:text-sm"
                             clearable={false}
                             searchable={false}
                             menuPlacement="top"
@@ -335,34 +423,37 @@ export default function ReportList() {
                     </div>
 
                     {/* Status Text */}
-                    <div className="rounded-xl bg-slate-50 px-4 py-2 text-xs md:text-sm tracking-tight text-slate-500">
-                        <span className="font-bold text-slate-800">
+                    <div className="min-w-0 flex-1 truncate rounded-xl bg-slate-50 px-2.5 py-1.5 text-center text-[11px] tracking-tight text-slate-500 md:flex-none md:px-4 md:py-2 md:text-sm">
+                        <span className="font-black text-slate-800">{page}</span>
+                        <span className="mx-1 text-slate-300">/</span>
+                        <span className="font-black text-slate-800">{Math.max(1, meta.totalPages)}</span>
+                        <span className="mx-1.5 text-slate-300">•</span>
+                        <span className="font-bold text-slate-700">
                             {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, meta.totalRows)}
                         </span>
-                        <span className="mx-1.5 text-slate-300">/</span>
-                        <span className="font-bold text-slate-800">{meta.totalRows}</span>
+                        <span className="hidden sm:inline">/{meta.totalRows}</span>
                     </div>
 
                     {/* Navigation Arrows */}
-                    <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+                    <div className="flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-0.5 md:p-1">
                         <button
                             type="button"
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:shadow-none transition-all active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:shadow-none transition-all active:scale-95 md:h-9 md:w-9"
                             title="Trang trước"
                         >
-                            <ChevronLeft className="w-5 h-5" />
+                            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
                             disabled={page === meta.totalPages}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:shadow-none transition-all active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-blue-600 hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:shadow-none transition-all active:scale-95 md:h-9 md:w-9"
                             title="Trang sau"
                         >
-                            <ChevronRight className="w-5 h-5" />
+                            <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
                         </button>
                     </div>
                 </div>

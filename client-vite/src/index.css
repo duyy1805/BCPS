@@ -202,3 +202,69 @@ body {
     to { box-shadow: 0 0 15px 2px var(--color-orange-500); }
   }
 }
+
+
+/* Responsive polish for BCPS mobile/tablet views */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+.responsive-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea,
+  button {
+    min-height: 42px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .modal-content {
+    max-width: calc(100vw - 24px);
+    margin: 0 12px;
+    border-radius: 1rem;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  .mobile-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-table-wrap table {
+    min-width: 640px;
+  }
+}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, List, PlusCircle, AlertTriangle, LogOut, ChevronRight, Menu, ChevronLeft, Bell, CheckCheck, UserCircle, MoreHorizontal, MessageCircle, ClipboardCheck, CheckCircle2, XCircle, RotateCcw, Archive } from 'lucide-react';
+import { LayoutDashboard, List, PlusCircle, AlertTriangle, LogOut, ChevronRight, Menu, ChevronLeft, Bell, UserCircle, MoreHorizontal, MessageCircle, ClipboardCheck, CheckCircle2, XCircle, RotateCcw, Archive } from 'lucide-react';
 import { cn } from '../context/UIContext';
 import { useNotifications } from '../context/NotificationContext';
 import { formatDate } from '../utils/api';
@@ -47,6 +47,12 @@ export default function MainLayout() {
         { path: '/reports/create', label: 'Tạo mới báo cáo', icon: PlusCircle, category: null }
     ];
 
+    const mobileNavItems = [
+        { path: '/', label: 'Trang chủ', icon: LayoutDashboard },
+        { path: '/reports', label: 'Báo cáo', icon: List },
+        { path: '/reports/create', label: 'Tạo mới', icon: PlusCircle },
+    ];
+
     const getPageTitle = () => {
         if (location.pathname === '/') return 'Dashboard';
         if (location.pathname === '/reports') return 'Danh sách báo cáo';
@@ -83,7 +89,7 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800">
+        <div className="flex h-screen min-w-0 overflow-hidden bg-slate-50 text-slate-800">
             {/* Backdrop for mobile */}
             {isMobileMenuOpen && (
                 <div
@@ -163,27 +169,27 @@ export default function MainLayout() {
 
             {/* Main Content */}
             <div className={cn(
-                "flex-1 flex flex-col overflow-hidden relative transition-all duration-300 ease-in-out",
+                "flex-1 min-w-0 flex flex-col overflow-hidden relative transition-all duration-300 ease-in-out",
                 "md:pl-0", // Default pl-0, logic handle below
                 isCollapsed ? "md:pl-20" : "md:pl-64"
             )}>
                 {/* Header */}
-                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 transition-all shadow-sm shadow-slate-100/50">
-                    <div className="flex items-center gap-4">
+                <header className="min-h-14 md:h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between gap-2 px-3 sm:px-4 md:px-8 sticky top-0 z-40 transition-all shadow-sm shadow-slate-100/50">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg md:hidden transition-colors"
+                            className="hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg md:hidden transition-colors" aria-label="Mở menu"
                         >
                             <Menu className="w-6 h-6" />
                         </button>
-                        <div className="flex items-center text-slate-500 text-sm font-medium">
+                        <div className="flex min-w-0 items-center text-slate-500 text-sm font-medium">
                             <span className="text-slate-400 hidden sm:inline">Hệ thống</span>
                             <ChevronRight className="w-4 h-4 mx-2 text-slate-300 hidden sm:inline" />
-                            <span className="text-slate-800 font-bold bg-slate-100 px-3 py-1 rounded-md max-w-37.5 sm:max-w-none truncate">{getPageTitle()}</span>
+                            <span className="min-w-0 max-w-[52vw] truncate rounded-md bg-slate-100 px-2.5 py-1 text-sm font-bold text-slate-800 sm:max-w-none sm:px-3">{getPageTitle()}</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 md:gap-5">
+                    <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 md:gap-5">
                         <div className="relative" ref={notificationRef}>
                             <button
                                 type="button"
@@ -200,10 +206,10 @@ export default function MainLayout() {
                             </button>
 
                             {isNotificationOpen && (
-                                <div className="absolute right-0 mt-3 w-[calc(100vw-2rem)] max-w-110 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden z-60 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="px-5 pt-5 pb-3">
+                                <div className="fixed left-3 right-3 top-16 z-60 max-h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 md:absolute md:left-auto md:right-0 md:top-auto md:mt-3 md:w-[calc(100vw-2rem)] md:max-w-110">
+                                    <div className="px-4 pt-4 pb-3 md:px-5 md:pt-5">
                                         <div className="flex items-center justify-between mb-4">
-                                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                                            <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
                                                 Thông báo
                                             </h2>
                                             <button
@@ -244,7 +250,7 @@ export default function MainLayout() {
                                         </div>
                                     </div>
 
-                                    <div className="px-5 pb-2 flex items-center justify-between">
+                                    <div className="px-4 md:px-5 pb-2 flex items-center justify-between">
                                         <div className="text-lg font-black text-slate-800">Trước đó</div>
                                         <Link
                                             to="/notifications"
@@ -255,7 +261,7 @@ export default function MainLayout() {
                                         </Link>
                                     </div>
 
-                                    <div className="max-h-[70vh] overflow-y-auto custom-scrollbar px-2 pb-3">
+                                    <div className="max-h-[calc(100vh-13rem)] md:max-h-[70vh] overflow-y-auto custom-scrollbar px-2 pb-3">
                                         {visibleNotifications.length > 0 ? visibleNotifications.map((item) => {
                                             const Icon = getNotificationIcon(item.TypeCode);
 
@@ -268,23 +274,23 @@ export default function MainLayout() {
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <div className="relative shrink-0">
-                                                            <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
-                                                                <UserCircle className="w-12 h-12 text-slate-400" />
+                                                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
+                                                                <UserCircle className="w-9 h-9 md:w-12 md:h-12 text-slate-400" />
                                                             </div>
-                                                            <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-white">
-                                                                <Icon className="w-4 h-4" />
+                                                            <div className="absolute -right-1 -bottom-1 w-6 h-6 md:w-7 md:h-7 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-white">
+                                                                <Icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                                             </div>
                                                         </div>
 
                                                         <div className="min-w-0 flex-1 pr-2">
                                                             <div className={cn(
-                                                                "text-[15px] leading-snug text-slate-700",
+                                                                "text-sm md:text-[15px] leading-snug text-slate-700",
                                                                 !item.IsRead && "font-black text-slate-900"
                                                             )}>
                                                                 {item.Title}
                                                             </div>
                                                             {item.Body && (
-                                                                <div className="text-sm leading-snug text-slate-500 mt-0.5 line-clamp-2">
+                                                                <div className="text-xs md:text-sm leading-snug text-slate-500 mt-0.5 line-clamp-2">
                                                                     {item.Body}
                                                                 </div>
                                                             )}
@@ -311,59 +317,6 @@ export default function MainLayout() {
                                 </div>
                             )}
 
-                            {false && isNotificationOpen && (
-                                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden z-60 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-                                        <div className="font-black text-slate-800">Thông báo</div>
-                                        <button
-                                            type="button"
-                                            onClick={handleMarkAllRead}
-                                            className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                                        >
-                                            <CheckCheck className="w-3.5 h-3.5" />
-                                            Đã đọc tất cả
-                                        </button>
-                                    </div>
-
-                                    <div className="max-h-96 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
-                                        {latest.length > 0 ? latest.map((item) => (
-                                            <button
-                                                key={item.NotificationID}
-                                                type="button"
-                                                onClick={() => openNotification(item)}
-                                                className={cn(
-                                                    "w-full p-4 text-left hover:bg-slate-50 transition-colors",
-                                                    !item.IsRead && "bg-blue-50/50"
-                                                )}
-                                            >
-                                                <div className="flex gap-3">
-                                                    <div className={cn(
-                                                        "mt-1.5 w-2 h-2 rounded-full shrink-0",
-                                                        item.IsRead ? "bg-slate-200" : "bg-blue-600"
-                                                    )} />
-                                                    <div className="min-w-0">
-                                                        <div className="font-black text-sm text-slate-800 truncate">{item.Title}</div>
-                                                        {item.Body && <div className="text-xs text-slate-500 mt-1 line-clamp-2">{item.Body}</div>}
-                                                        <div className="text-[10px] text-slate-400 mt-2 font-bold">{formatDate(item.CreatedAt)}</div>
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        )) : (
-                                            <div className="p-8 text-center text-sm text-slate-400 font-medium">
-                                                Không có thông báo.
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <Link
-                                        to="/notifications"
-                                        onClick={() => setIsNotificationOpen(false)}
-                                        className="block px-4 py-3 text-center text-sm font-black text-blue-600 hover:bg-blue-50 border-t border-slate-100"
-                                    >
-                                        Xem tất cả
-                                    </Link>
-                                </div>
-                            )}
                         </div>
                         <div className="relative" ref={userMenuRef}>
                             <button
@@ -376,7 +329,7 @@ export default function MainLayout() {
                             </button>
 
                             {isUserMenuOpen && (
-                                <div className="absolute right-0 mt-3 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden z-60 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute right-0 mt-3 w-[calc(100vw-1.5rem)] max-w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden z-60 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="px-4 py-4 border-b border-slate-100 bg-slate-50/70">
                                         <div className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">
                                             Tài khoản
@@ -423,10 +376,36 @@ export default function MainLayout() {
                 </header>
 
                 {/* Outlet */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth custom-scrollbar bg-slate-50">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-24 md:p-8 md:pb-8 scroll-smooth custom-scrollbar bg-slate-50">
                     <Outlet />
                 </main>
             </div>
+
+            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pt-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] shadow-[0_-8px_28px_rgba(15,23,42,0.10)] backdrop-blur md:hidden" aria-label="Điều hướng chính">
+                <div className="mx-auto grid max-w-md grid-cols-3 gap-1">
+                    {mobileNavItems.map((item) => {
+                        const isActive = location.pathname === item.path ||
+                            (item.path === '/reports' && location.pathname.startsWith('/reports') && location.pathname !== '/reports/create');
+                        const Icon = item.icon;
+
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={cn(
+                                    "flex min-h-13 flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-[11px] font-black transition-all active:scale-95",
+                                    isActive
+                                        ? "bg-blue-50 text-blue-700"
+                                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                                )}
+                            >
+                                <Icon className="mb-0.5 h-5 w-5" />
+                                <span className="max-w-full truncate leading-tight">{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </nav>
         </div>
     );
 }

@@ -49,7 +49,7 @@ export default function Login() {
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-3xl rounded-full"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-3xl rounded-full"></div>
 
-            <div className="w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-slate-100 relative z-10 animate-in slide-in-from-bottom-8 duration-700 fade-in">
+            <div className="w-full max-w-md bg-white/80 backdrop-blur-xl p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-100 relative z-10 animate-in slide-in-from-bottom-8 duration-700 fade-in">
                 <div className="flex justify-center mb-8">
                     <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 transform -rotate-6">
                         <AlertTriangle className="w-8 h-8 text-white transform rotate-6" />

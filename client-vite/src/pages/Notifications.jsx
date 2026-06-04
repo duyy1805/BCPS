@@ -45,7 +45,7 @@ export default function Notifications() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto space-y-5 animate-in fade-in duration-300">
+        <div className="max-w-5xl mx-auto space-y-4 md:space-y-5 animate-in fade-in duration-300">
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">

@@ -28,6 +28,7 @@ export default function StaticSelect({
         if (value !== undefined && value !== null && value !== "") {
             const found = options.find(opt => opt[valueField] == value);
             if (found) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setSelected(found);
             } else {
                 // If not found in current options but we have a value, 
@@ -74,7 +75,7 @@ export default function StaticSelect({
         <div className={cn("relative", className)} ref={wrapperRef}>
             <div
                 className={cn(
-                    "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between cursor-pointer transition-all",
+                    "w-full min-h-11 px-3 md:px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between cursor-pointer transition-all text-sm",
                     isOpen ? "bg-white border-blue-500 ring-2 ring-blue-500/10" : "hover:border-slate-300",
                     controlClassName
                 )}
@@ -104,7 +105,7 @@ export default function StaticSelect({
             {isOpen && (
                 <div
                     className={cn(
-                        "absolute z-50 w-full bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200",
+                        "absolute z-50 w-full min-w-56 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200",
                         menuPlacement === "top"
                             ? "bottom-full mb-2 slide-in-from-bottom-2"
                             : "mt-2 slide-in-from-top-2"
@@ -125,7 +126,7 @@ export default function StaticSelect({
                             </div>
                         </div>
                     )}
-                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
                         {filteredOptions.length > 0 ? (
                             filteredOptions.map((opt, idx) => (
                                 <div
@@ -143,7 +144,7 @@ export default function StaticSelect({
                                 </div>
                             ))
                         ) : (
-                            <div className="p-8 text-center text-slate-400 text-sm">Không tìm thấy kết quả</div>
+                            <div className="p-6 md:p-8 text-center text-slate-400 text-sm">Không tìm thấy kết quả</div>
                         )}
                     </div>
                 </div>

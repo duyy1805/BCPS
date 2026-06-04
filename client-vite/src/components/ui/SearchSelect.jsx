@@ -96,7 +96,7 @@ export default function SearchSelect({
         <div className={cn("relative", className)} ref={wrapperRef}>
             <div
                 className={cn(
-                    "w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between cursor-pointer transition-all",
+                    "w-full min-h-11 px-3 md:px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between cursor-pointer transition-all text-sm",
                     isOpen ? "bg-white border-blue-500 ring-2 ring-blue-500/10" : "hover:border-slate-300"
                 )}
                 onClick={() => {
@@ -124,7 +124,7 @@ export default function SearchSelect({
             </div>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute z-50 mt-2 w-full min-w-72 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="p-3 border-b border-slate-100 bg-slate-50/50">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -138,9 +138,9 @@ export default function SearchSelect({
                             />
                         </div>
                     </div>
-                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
                         {loading ? (
-                            <div className="p-8 text-center">
+                            <div className="p-6 md:p-8 text-center">
                                 <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
                             </div>
                         ) : options.length > 0 ? (
@@ -160,7 +160,7 @@ export default function SearchSelect({
                                 </div>
                             ))
                         ) : (
-                            <div className="p-8 text-center text-slate-400 text-sm">Không tìm thấy kết quả</div>
+                            <div className="p-6 md:p-8 text-center text-slate-400 text-sm">Không tìm thấy kết quả</div>
                         )}
                     </div>
                 </div>

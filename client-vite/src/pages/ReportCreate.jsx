@@ -262,26 +262,26 @@ export default function ReportCreate() {
     if (loading) return <div className="p-8 text-center text-slate-500">Đang tải...</div>;
 
     return (
-        <div className="max-w-8xl mx-auto space-y-6 ">
+        <div className="max-w-8xl mx-auto space-y-4 md:space-y-6">
             {/* Header Actions */}
-            <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <h1 className="text-xl font-bold text-slate-800 flex items-center">
+            <div className="flex flex-col gap-3 bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <h1 className="flex items-center text-base md:text-xl font-bold text-slate-800">
                     <FileText className="w-6 h-6 mr-3 text-blue-600" />
                     Tạo mới Báo cáo Phát sinh
                 </h1>
-                <div className="flex gap-4">
-                    <button onClick={() => navigate('/reports')} className="px-5 py-2.5 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-3">
+                    <button onClick={() => navigate('/reports')} className="justify-center px-4 md:px-5 py-2.5 text-sm text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                         Hủy bỏ
                     </button>
-                    <button onClick={submitDraft} disabled={saving} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm shadow-blue-200 flex items-center transition-all active:scale-95 disabled:opacity-50">
+                    <button onClick={submitDraft} disabled={saving} className="justify-center px-4 md:px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-sm shadow-blue-200 flex items-center transition-all active:scale-95 disabled:opacity-50">
                         <Save className="w-5 h-5 mr-2" /> {saving ? 'Đang lưu...' : 'Lưu Nháp Hồ Sơ'}
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 md:gap-6">
                 {/* Left Col - ERP Search & Form */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-4 md:space-y-6">
                     {/* ERP Search */}
                     <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <h3 className="text-[11px] md:text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">1. Chọn kế hoạch</h3>
@@ -309,8 +309,8 @@ export default function ReportCreate() {
                         )}
 
                         {selectedPlans.length > 0 && (
-                            <div className="overflow-hidden rounded-xl border border-blue-100 bg-blue-50/30 animate-in fade-in">
-                                <table className="w-full text-sm">
+                            <div className="mobile-table-wrap overflow-x-auto rounded-xl border border-blue-100 bg-blue-50/30 animate-in fade-in">
+                                <table className="w-full min-w-[680px] text-sm">
                                     <thead className="bg-blue-50 text-[10px] uppercase tracking-wider text-slate-500">
                                         <tr>
                                             <th className="px-3 py-2 text-left">Kế hoạch</th>
@@ -354,7 +354,7 @@ export default function ReportCreate() {
                                 <textarea value={form.shortDesc} onChange={e => setForm({ ...form, shortDesc: e.target.value })} rows="2" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 text-sm md:text-base"></textarea>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
                                 <div>
                                     <label className="block text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-2">Loại phát sinh</label>
                                     <StaticSelect
@@ -390,7 +390,7 @@ export default function ReportCreate() {
 
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                 <label className="block text-sm font-bold text-slate-700 mb-3">Mức độ ảnh hưởng</label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
                                     {masterData.impactTypes.map(imp => {
                                         const val = imp.ImpactCode || imp.Code || imp.Value || imp.ID;
                                         const label = imp.ImpactName || imp.ImpactTypeName || imp.Name || val;
@@ -408,10 +408,10 @@ export default function ReportCreate() {
                 </div>
 
                 {/* Right Col */}
-                <div className="space-y-6">
+                <div className="space-y-4 md:space-y-6">
 
                     {/* Action form */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">3. Xử lý & Trách nhiệm</h3>
 
                         <div className="space-y-5">
@@ -495,7 +495,7 @@ export default function ReportCreate() {
                     </div>
 
                     {/* Cost Toggle */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <label className="flex items-start gap-4 cursor-pointer group p-2">
                             <div className="relative flex items-center mt-1">
                                 <input
@@ -540,8 +540,8 @@ export default function ReportCreate() {
 
                                 {/* Bảng danh sách chi phí đã thêm */}
                                 {form.costs.length > 0 && (
-                                    <div className="bg-white border border-amber-200 rounded-xl overflow-hidden mb-4">
-                                        <table className="w-full text-xs">
+                                    <div className="bg-white border border-amber-200 rounded-xl overflow-x-auto mobile-table-wrap mb-4">
+                                        <table className="w-full min-w-[640px] text-xs">
                                             <thead className="bg-amber-100 text-amber-900 font-bold uppercase tracking-wider text-[10px]">
                                                 <tr>
                                                     <th className="px-4 py-2 text-left">Loại / Mô tả</th>
@@ -575,7 +575,7 @@ export default function ReportCreate() {
 
                                 {/* Form nhập chi phí */}
                                 <div className="bg-white/50 p-4 rounded-xl border border-dashed border-amber-300 space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
                                         <div>
                                             <label className="block text-[10px] font-bold text-amber-600 uppercase mb-1">Loại Chi Phí (*)</label>
                                             <select
@@ -599,7 +599,7 @@ export default function ReportCreate() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
                                         <button type="button" onClick={() => setCostForm({ ...costForm, useManual: false })} className={cn("flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all", !costForm.useManual ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 bg-white text-slate-500")}>
                                             SL × Đơn giá
                                         </button>
@@ -609,7 +609,7 @@ export default function ReportCreate() {
                                     </div>
 
                                     {!costForm.useManual ? (
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
                                             <div>
                                                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Số Lượng</label>
                                                 <input
@@ -647,7 +647,7 @@ export default function ReportCreate() {
                                     <button
                                         type="button"
                                         onClick={addCostLine}
-                                        className="w-full py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 flex items-center justify-center gap-2"
+                                        className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 flex items-center justify-center gap-2"
                                     >
                                         <Plus className="w-4 h-4" /> Thêm khoản chi phí
                                     </button>
@@ -657,9 +657,9 @@ export default function ReportCreate() {
                     </div>
 
                     {/* File Upload */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <h3 className="text-sm font-bold text-slate-800 mb-2">Đính kèm tệp tin</h3>
-                        <input type="file" onChange={e => setFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <input type="file" onChange={e => setFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-2 file:rounded-xl file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 md:file:mr-4 md:file:px-4" />
                     </div>
                 </div>
             </div>

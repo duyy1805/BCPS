@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
                 // eslint-disable-next-line react-hooks/set-state-in-effect
                 setUser({ token, userName, empCode, deptCode, unitName, roles });
             } else {
-                // Token Ä‘Ã£ háº¿t háº¡n â†’ xÃ³a vÃ  chuyá»ƒn vá» login
+                // Token da het han, xoa va chuyen ve login
                 clearStoredAuth();
                 navigate('/login', { state: { reason: 'expired' }, replace: true });
             }
