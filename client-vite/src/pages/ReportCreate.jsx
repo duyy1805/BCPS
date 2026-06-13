@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Save, X, AlertCircle, Info, FileText, Plus, Trash2, DollarSign } from 'lucide-react';
-import api, { formatMoney, formatInputNumber, parseInputNumber } from '../utils/api';
+import api, { formatDate, formatMoney, formatInputNumber, parseInputNumber } from '../utils/api';
 import { useUI } from '../context/UIContext';
 import { cn } from '../context/UIContext';
 import SearchSelect from '../components/ui/SearchSelect';
@@ -153,12 +153,20 @@ export default function ReportCreate() {
                 showToast('Kế hoạch này đã được chọn', 'warning');
                 return prev;
             }
-            return [...prev, plan];
+            return [...prev, { ...plan, adjustQty: '', adjustDate: '' }];
         });
     };
 
     const removeSelectedPlan = (planSelectKey) => {
         setSelectedPlans(prev => prev.filter(plan => plan.PlanSelectKey !== planSelectKey));
+    };
+
+    const updateSelectedPlanAdjustment = (planSelectKey, field, value) => {
+        setSelectedPlans(prev => prev.map(plan => (
+            plan.PlanSelectKey === planSelectKey
+                ? { ...plan, [field]: value }
+                : plan
+        )));
     };
 
     const addCostLine = () => {
@@ -195,6 +203,11 @@ export default function ReportCreate() {
             const body = {
                 reportId: null,
                 planSelectKeys: selectedPlans.map(plan => plan.PlanSelectKey),
+                plans: selectedPlans.map(plan => ({
+                    planSelectKey: plan.PlanSelectKey,
+                    adjustQty: plan.adjustQty === '' || plan.adjustQty === null || plan.adjustQty === undefined ? null : plan.adjustQty,
+                    adjustDate: plan.adjustDate === '' || plan.adjustDate === null || plan.adjustDate === undefined ? null : plan.adjustDate
+                })),
                 occurrenceTime: new Date().toISOString(),
                 exceptionTypeId: Number(form.typeId),
                 exceptionCauseId: Number(form.causeId),
@@ -310,16 +323,24 @@ export default function ReportCreate() {
 
                         {selectedPlans.length > 0 && (
                             <div className="mobile-table-wrap overflow-x-auto rounded-xl border border-blue-100 bg-blue-50/30 animate-in fade-in">
-                                <table className="w-full min-w-[680px] text-sm">
+                                <table className="w-full min-w-[1120px] text-sm">
                                     <thead className="bg-blue-50 text-[10px] uppercase tracking-wider text-slate-500">
                                         <tr>
-                                            <th className="px-3 py-2 text-left">Kế hoạch</th>
-                                            <th className="px-3 py-2 text-left">Đơn hàng</th>
-                                            <th className="px-3 py-2 text-left">Sản phẩm</th>
-                                            <th className="px-3 py-2 text-left">ItemCode</th>
-                                            <th className="px-3 py-2 text-left">Công đoạn</th>
-                                            <th className="px-3 py-2 text-left">Bộ phận</th>
-                                            <th className="px-3 py-2 text-right">Xóa</th>
+                                            <th rowSpan="2" className="px-3 py-2 text-left">Kế hoạch</th>
+                                            <th rowSpan="2" className="px-3 py-2 text-left">Đơn hàng</th>
+                                            <th rowSpan="2" className="px-3 py-2 text-left">Sản phẩm</th>
+                                            <th rowSpan="2" className="px-3 py-2 text-left">ItemCode</th>
+                                            <th rowSpan="2" className="px-3 py-2 text-left">Công đoạn</th>
+                                            <th rowSpan="2" className="px-3 py-2 text-left">Bộ phận</th>
+                                            <th colSpan="2" className="border-l border-blue-100 px-3 py-2 text-center text-blue-700">Kế hoạch</th>
+                                            <th colSpan="2" className="border-l border-blue-100 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
+                                            <th rowSpan="2" className="px-3 py-2 text-right">Xóa</th>
+                                        </tr>
+                                        <tr>
+                                            <th className="border-l border-blue-100 px-3 py-2 text-center">Ngày KH</th>
+                                            <th className="px-3 py-2 text-right">Số lượng</th>
+                                            <th className="border-l border-blue-100 px-3 py-2 text-center">Ngày</th>
+                                            <th className="px-3 py-2 text-right">Số lượng</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-blue-100">
@@ -331,6 +352,25 @@ export default function ReportCreate() {
                                                 <td className="px-3 py-2 text-slate-700">{plan.ProductCode || '--'}</td>
                                                 <td className="px-3 py-2 text-slate-700">{plan.OperationName || plan.OperationCode || '--'}</td>
                                                 <td className="px-3 py-2 text-slate-700">{plan.DepartmentName || '--'}</td>
+                                                <td className="px-3 py-2 text-center text-slate-700">{formatDate(plan.PlanDate, false) || '--'}</td>
+                                                <td className="px-3 py-2 text-right font-bold text-slate-800">{plan.PlanQty ?? '--'}</td>
+                                                <td className="px-3 py-2 text-center">
+                                                    <input
+                                                        type="date"
+                                                        value={plan.adjustDate || ''}
+                                                        onChange={e => updateSelectedPlanAdjustment(plan.PlanSelectKey, 'adjustDate', e.target.value)}
+                                                        className="w-36 rounded-lg border border-blue-100 bg-white px-2 py-1 font-bold text-slate-800 outline-none focus:border-blue-500"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <input
+                                                        type="text"
+                                                        value={formatInputNumber(plan.adjustQty)}
+                                                        onChange={e => updateSelectedPlanAdjustment(plan.PlanSelectKey, 'adjustQty', parseInputNumber(e.target.value))}
+                                                        className="w-28 rounded-lg border border-blue-100 bg-white px-2 py-1 text-right font-bold text-slate-800 outline-none focus:border-blue-500"
+                                                        placeholder="0"
+                                                    />
+                                                </td>
                                                 <td className="px-3 py-2 text-right">
                                                     <button type="button" onClick={() => removeSelectedPlan(plan.PlanSelectKey)} className="inline-flex items-center text-red-500 hover:text-red-700">
                                                         <Trash2 className="w-4 h-4" />

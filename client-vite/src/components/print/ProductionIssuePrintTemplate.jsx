@@ -264,14 +264,20 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                 <table style={styles.table}>
                     <thead>
                         <tr>
-                            <th style={styles.th}>TT</th>
-                            <th style={styles.th}>Mã kế hoạch</th>
-                            <th style={styles.th}>Đơn hàng</th>
-                            <th style={styles.th}>Sản phẩm</th>
-                            <th style={styles.th}>ItemCode</th>
-                            <th style={styles.th}>Công đoạn</th>
-                            <th style={styles.th}>Bộ phận</th>
+                            <th style={styles.th} rowSpan={2}>TT</th>
+                            <th style={styles.th} rowSpan={2}>Mã kế hoạch</th>
+                            <th style={styles.th} rowSpan={2}>Đơn hàng</th>
+                            <th style={styles.th} rowSpan={2}>Sản phẩm</th>
+                            <th style={styles.th} rowSpan={2}>ItemCode</th>
+                            <th style={styles.th} rowSpan={2}>Công đoạn</th>
+                            <th style={styles.th} rowSpan={2}>Bộ phận</th>
+                            <th style={styles.th} colSpan={2}>Kế hoạch</th>
+                            <th style={styles.th} colSpan={2}>Điều chỉnh</th>
+                        </tr>
+                        <tr>
                             <th style={styles.th}>Ngày KH</th>
+                            <th style={styles.th}>Số lượng</th>
+                            <th style={styles.th}>Ngày</th>
                             <th style={styles.th}>Số lượng</th>
                         </tr>
                     </thead>
@@ -287,10 +293,12 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                                 <td style={styles.td}>{plan.DepartmentName || '...'}</td>
                                 <td style={styles.tdCenter}>{plan.PlanDate ? new Date(plan.PlanDate).toLocaleDateString('vi-VN') : '...'}</td>
                                 <td style={styles.tdCenter}>{plan.PlanQty ?? '...'}</td>
+                                <td style={styles.tdCenter}>{plan.AdjustDate ? new Date(plan.AdjustDate).toLocaleDateString('vi-VN') : '...'}</td>
+                                <td style={styles.tdCenter}>{plan.AdjustQty ?? '...'}</td>
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={9} style={{ ...styles.tdCenter, fontStyle: "italic", color: "#666" }}>
+                                <td colSpan={11} style={{ ...styles.tdCenter, fontStyle: "italic", color: "#666" }}>
                                     Không gắn kế hoạch ERP
                                 </td>
                             </tr>

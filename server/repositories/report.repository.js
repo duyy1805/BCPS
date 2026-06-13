@@ -240,8 +240,8 @@ class ReportRepository extends DbRepository {
         };
     }
 
-    async syncPlans(reportId, planSelectKeys, actionByEmpCode) {
-        const keys = Array.isArray(planSelectKeys) ? planSelectKeys : [];
+    async syncPlans(reportId, planItems, actionByEmpCode) {
+        const items = Array.isArray(planItems) ? planItems : [];
         return this.query(
             `
             SET NOCOUNT ON;
@@ -271,9 +271,13 @@ class ReportRepository extends DbRepository {
 
                 ;WITH requested AS
                 (
-                    SELECT DISTINCT LTRIM(RTRIM([value])) AS PlanSelectKey
-                    FROM OPENJSON(@PlanSelectKeysJson)
-                    WHERE NULLIF(LTRIM(RTRIM([value])), '') IS NOT NULL
+                    SELECT DISTINCT LTRIM(RTRIM(PlanSelectKey)) AS PlanSelectKey
+                    FROM OPENJSON(@PlanItemsJson)
+                    WITH
+                    (
+                        PlanSelectKey VARCHAR(300) '$.planSelectKey'
+                    )
+                    WHERE NULLIF(LTRIM(RTRIM(PlanSelectKey)), '') IS NOT NULL
                 ),
                 parsed AS
                 (
@@ -326,8 +330,56 @@ class ReportRepository extends DbRepository {
                    AND p.OperationCode = n.OperationCode
                    AND p.DepartmentCode = n.DepartmentCode;
 
-                IF (SELECT COUNT(1) FROM OPENJSON(@PlanSelectKeysJson)) <> (SELECT COUNT(1) FROM ps.ReportPlan WHERE ReportID = @ReportID)
+                IF (SELECT COUNT(DISTINCT LTRIM(RTRIM(PlanSelectKey))) FROM OPENJSON(@PlanItemsJson) WITH (PlanSelectKey VARCHAR(300) '$.planSelectKey') WHERE NULLIF(LTRIM(RTRIM(PlanSelectKey)), '') IS NOT NULL) <> (SELECT COUNT(1) FROM ps.ReportPlan WHERE ReportID = @ReportID)
                     THROW 56001, N'Có kế hoạch ERP không hợp lệ hoặc bị trùng.', 1;
+
+                ;WITH requestedAdjustments AS
+                (
+                    SELECT
+                        LTRIM(RTRIM(PlanSelectKey)) AS PlanSelectKey,
+                        AdjustQty,
+                        AdjustDate
+                    FROM OPENJSON(@PlanItemsJson)
+                    WITH
+                    (
+                        PlanSelectKey VARCHAR(300) '$.planSelectKey',
+                        AdjustQty DECIMAL(18, 3) '$.adjustQty',
+                        AdjustDate DATE '$.adjustDate'
+                    )
+                    WHERE NULLIF(LTRIM(RTRIM(PlanSelectKey)), '') IS NOT NULL
+                )
+                MERGE ps.ReportPlanAdjustment AS target
+                USING
+                (
+                    SELECT
+                        @ReportID AS ReportID,
+                        PlanSelectKey,
+                        MAX(AdjustQty) AS AdjustQty,
+                        MAX(AdjustDate) AS AdjustDate
+                    FROM requestedAdjustments
+                    GROUP BY PlanSelectKey
+                ) AS source
+                    ON target.ReportID = source.ReportID
+                   AND target.PlanSelectKey = source.PlanSelectKey
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        AdjustQty = source.AdjustQty,
+                        AdjustDate = source.AdjustDate,
+                        UpdatedAt = SYSDATETIME()
+                WHEN NOT MATCHED BY TARGET THEN
+                    INSERT (ReportID, PlanSelectKey, AdjustQty, AdjustDate)
+                    VALUES (source.ReportID, source.PlanSelectKey, source.AdjustQty, source.AdjustDate);
+
+                DELETE adj
+                FROM ps.ReportPlanAdjustment adj
+                WHERE adj.ReportID = @ReportID
+                  AND NOT EXISTS
+                  (
+                      SELECT 1
+                      FROM ps.ReportPlan rp
+                      WHERE rp.ReportID = adj.ReportID
+                        AND rp.PlanSelectKey = adj.PlanSelectKey
+                  );
 
                 DECLARE @NewKeys NVARCHAR(MAX);
                 SELECT @NewKeys =
@@ -377,7 +429,7 @@ class ReportRepository extends DbRepository {
             `,
             [
                 { name: "ReportID", type: sql.BigInt, value: reportId },
-                { name: "PlanSelectKeysJson", type: sql.NVarChar(sql.MAX), value: JSON.stringify(keys) },
+                { name: "PlanItemsJson", type: sql.NVarChar(sql.MAX), value: JSON.stringify(items) },
                 { name: "ActionByEmpCode", type: sql.VarChar(50), value: actionByEmpCode }
             ]
         );
@@ -407,10 +459,16 @@ class ReportRepository extends DbRepository {
         const history = result.recordsets[7];
         const planResult = await this.query(
             `
-            SELECT *
-            FROM ps.ReportPlan
-            WHERE ReportID = @ReportID
-            ORDER BY PlanDate DESC, PlanNo;
+            SELECT
+                rp.*,
+                adj.AdjustQty,
+                adj.AdjustDate
+            FROM ps.ReportPlan rp
+            LEFT JOIN ps.ReportPlanAdjustment adj
+                ON adj.ReportID = rp.ReportID
+               AND adj.PlanSelectKey = rp.PlanSelectKey
+            WHERE rp.ReportID = @ReportID
+            ORDER BY rp.PlanDate DESC, rp.PlanNo;
             `,
             [{ name: "ReportID", type: sql.BigInt, value: id }]
         );
@@ -545,13 +603,19 @@ class ReportRepository extends DbRepository {
     }
 
     async getPlansForReports(reportIds) {
-        if (!Array.isArray(reportIds) || reportIds.length === 0) return [];
+        if (!Array.isArray(reportIds) || reportIds.length === 0) return { recordset: [] };
         return this.query(
             `
-            SELECT *
-            FROM ps.ReportPlan
-            WHERE ReportID IN (SELECT TRY_CAST([value] AS BIGINT) FROM OPENJSON(@ReportIdsJson))
-            ORDER BY ReportID, PlanDate DESC, PlanNo;
+            SELECT
+                rp.*,
+                adj.AdjustQty,
+                adj.AdjustDate
+            FROM ps.ReportPlan rp
+            LEFT JOIN ps.ReportPlanAdjustment adj
+                ON adj.ReportID = rp.ReportID
+               AND adj.PlanSelectKey = rp.PlanSelectKey
+            WHERE rp.ReportID IN (SELECT TRY_CAST([value] AS BIGINT) FROM OPENJSON(@ReportIdsJson))
+            ORDER BY rp.ReportID, rp.PlanDate DESC, rp.PlanNo;
             `,
             [
                 { name: "ReportIdsJson", type: sql.NVarChar(sql.MAX), value: JSON.stringify(reportIds) }

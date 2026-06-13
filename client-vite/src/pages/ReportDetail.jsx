@@ -434,9 +434,14 @@ export default function ReportDetail() {
     const startEditing = async () => {
         await loadMasterData();
         const r = data.report;
+        const normalizedPlans = (data.plans || []).map((plan) => ({
+            ...plan,
+            adjustQty: plan.AdjustQty ?? '',
+            adjustDate: plan.AdjustDate ? String(plan.AdjustDate).split("T")[0] : '',
+        }));
         setEditForm({
             reportId: id ? Number(id) : null,
-            planSelectKeys: data.plans?.map((plan) => plan.PlanSelectKey) || [],
+            planSelectKeys: normalizedPlans.map((plan) => plan.PlanSelectKey),
             occurrenceTime: r.OccurrenceTime,
             exceptionTypeId: r.ExceptionTypeID,
             exceptionCauseId: r.ExceptionCauseID,
@@ -453,7 +458,7 @@ export default function ReportDetail() {
             impactCodesCsv: data.impacts?.map((i) => i.ImpactCode).join(",") || "",
             occurredDeptCode_NT: r.OccurredDeptName_NT || "",
         });
-        setEditSelectedPlans(data.plans || []);
+        setEditSelectedPlans(normalizedPlans);
         setIsEditing(true);
     };
 
@@ -472,7 +477,7 @@ export default function ReportDetail() {
         if (editSelectedPlans.some((item) => item.PlanSelectKey === plan.PlanSelectKey)) {
             return showToast("Kế hoạch này đã được chọn", "warning");
         }
-        const nextPlans = [...editSelectedPlans, plan];
+        const nextPlans = [...editSelectedPlans, { ...plan, adjustQty: '', adjustDate: '' }];
         setEditSelectedPlans(nextPlans);
         setEditForm((prev) => ({ ...prev, planSelectKeys: nextPlans.map((item) => item.PlanSelectKey) }));
     };
@@ -481,6 +486,14 @@ export default function ReportDetail() {
         const nextPlans = editSelectedPlans.filter((plan) => plan.PlanSelectKey !== planSelectKey);
         setEditSelectedPlans(nextPlans);
         setEditForm((prev) => ({ ...prev, planSelectKeys: nextPlans.map((item) => item.PlanSelectKey) }));
+    };
+
+    const updateEditPlanAdjustment = (planSelectKey, field, value) => {
+        setEditSelectedPlans((prev) => prev.map((plan) => (
+            plan.PlanSelectKey === planSelectKey
+                ? { ...plan, [field]: value }
+                : plan
+        )));
     };
 
     useEffect(() => {
@@ -507,7 +520,16 @@ export default function ReportDetail() {
     const saveEdit = async () => {
         setSaving(true);
         try {
-            const res = await api.post("/reports/draft", editForm);
+            const payload = {
+                ...editForm,
+                planSelectKeys: editSelectedPlans.map((plan) => plan.PlanSelectKey),
+                plans: editSelectedPlans.map((plan) => ({
+                    planSelectKey: plan.PlanSelectKey,
+                    adjustQty: plan.adjustQty === '' || plan.adjustQty === null || plan.adjustQty === undefined ? null : plan.adjustQty,
+                    adjustDate: plan.adjustDate === '' || plan.adjustDate === null || plan.adjustDate === undefined ? null : plan.adjustDate,
+                })),
+            };
+            const res = await api.post("/reports/draft", payload);
             if (res.data.success) {
                 showToast("Đã cập nhật thông tin hồ sơ!", "success");
                 setIsEditing(false);
@@ -1127,16 +1149,24 @@ export default function ReportDetail() {
                                                     />
                                                 )}
                                                 <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
-                                                    <table className="w-full min-w-[640px] text-xs">
+                                                    <table className="w-full min-w-[1120px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
-                                                                <th className="px-3 py-2 text-left">Mã kế hoạch</th>
-                                                                <th className="px-3 py-2 text-left">Đơn hàng</th>
-                                                                <th className="px-3 py-2 text-left">Sản phẩm</th>
-                                                                <th className="px-3 py-2 text-left">ItemCode</th>
-                                                                <th className="px-3 py-2 text-left">Công đoạn</th>
-                                                                <th className="px-3 py-2 text-left">Bộ phận</th>
-                                                                <th className="px-3 py-2 text-right">Xóa</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Mã kế hoạch</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Đơn hàng</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Sản phẩm</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">ItemCode</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Công đoạn</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Bộ phận</th>
+                                                                <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-blue-700">Kế hoạch</th>
+                                                                <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-right">Xóa</th>
+                                                            </tr>
+                                                            <tr>
+                                                                <th className="border-l border-slate-200 px-3 py-2 text-center">Ngày KH</th>
+                                                                <th className="px-3 py-2 text-right">Số lượng</th>
+                                                                <th className="border-l border-slate-200 px-3 py-2 text-center">Ngày</th>
+                                                                <th className="px-3 py-2 text-right">Số lượng</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-100">
@@ -1148,6 +1178,25 @@ export default function ReportDetail() {
                                                                     <td className="px-3 py-2">{plan.ProductCode || '--'}</td>
                                                                     <td className="px-3 py-2">{plan.OperationName || plan.OperationCode || '--'}</td>
                                                                     <td className="px-3 py-2">{plan.DepartmentName || '--'}</td>
+                                                                    <td className="px-3 py-2 text-center">{formatDate(plan.PlanDate, false) || '--'}</td>
+                                                                    <td className="px-3 py-2 text-right font-bold text-slate-800">{plan.PlanQty ?? '--'}</td>
+                                                                    <td className="px-3 py-2 text-center">
+                                                                        <input
+                                                                            type="date"
+                                                                            value={plan.adjustDate || ''}
+                                                                            onChange={(e) => updateEditPlanAdjustment(plan.PlanSelectKey, 'adjustDate', e.target.value)}
+                                                                            className="w-36 rounded-lg border border-slate-200 bg-white px-2 py-1 font-bold text-slate-800 outline-none focus:border-blue-500"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-right">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={formatInputNumber(plan.adjustQty)}
+                                                                            onChange={(e) => updateEditPlanAdjustment(plan.PlanSelectKey, 'adjustQty', parseInputNumber(e.target.value))}
+                                                                            className="w-28 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-bold text-slate-800 outline-none focus:border-blue-500"
+                                                                            placeholder="0"
+                                                                        />
+                                                                    </td>
                                                                     <td className="px-3 py-2 text-right">
                                                                         <button type="button" onClick={() => removeEditPlan(plan.PlanSelectKey)} className="text-red-500 hover:text-red-700">
                                                                             <Trash2 className="w-4 h-4 inline" />
@@ -1156,7 +1205,7 @@ export default function ReportDetail() {
                                                                 </tr>
                                                             )) : (
                                                                 <tr>
-                                                                    <td colSpan="7" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                    <td colSpan="11" className="px-3 py-5 text-center text-slate-400 italic">
                                                                         Không gắn kế hoạch ERP
                                                                     </td>
                                                                 </tr>
@@ -1372,16 +1421,22 @@ export default function ReportDetail() {
                                                     Danh sách kế hoạch ERP
                                                 </h3>
                                                 <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
-                                                    <table className="w-full min-w-[640px] text-xs">
+                                                    <table className="w-full min-w-[1040px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
-                                                                <th className="px-3 py-2 text-left">Mã kế hoạch</th>
-                                                                <th className="px-3 py-2 text-left">Đơn hàng</th>
-                                                                <th className="px-3 py-2 text-left">Sản phẩm</th>
-                                                                <th className="px-3 py-2 text-left">ItemCode</th>
-                                                                <th className="px-3 py-2 text-left">Công đoạn</th>
-                                                                <th className="px-3 py-2 text-left">Bộ phận</th>
-                                                                <th className="px-3 py-2 text-center">Ngày KH</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Mã kế hoạch</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Đơn hàng</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Sản phẩm</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">ItemCode</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Công đoạn</th>
+                                                                <th rowSpan="2" className="px-3 py-2 text-left">Bộ phận</th>
+                                                                <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-blue-700">Kế hoạch</th>
+                                                                <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
+                                                            </tr>
+                                                            <tr>
+                                                                <th className="border-l border-slate-200 px-3 py-2 text-center">Ngày KH</th>
+                                                                <th className="px-3 py-2 text-right">Số lượng</th>
+                                                                <th className="border-l border-slate-200 px-3 py-2 text-center">Ngày</th>
                                                                 <th className="px-3 py-2 text-right">Số lượng</th>
                                                             </tr>
                                                         </thead>
@@ -1396,10 +1451,12 @@ export default function ReportDetail() {
                                                                     <td className="px-3 py-2">{plan.DepartmentName || '--'}</td>
                                                                     <td className="px-3 py-2 text-center">{formatDate(plan.PlanDate, false) || '--'}</td>
                                                                     <td className="px-3 py-2 text-right">{plan.PlanQty ?? '--'}</td>
+                                                                    <td className="px-3 py-2 text-center">{formatDate(plan.AdjustDate, false) || '--'}</td>
+                                                                    <td className="px-3 py-2 text-right">{plan.AdjustQty ?? '--'}</td>
                                                                 </tr>
                                                             )) : (
                                                                 <tr>
-                                                                    <td colSpan="8" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                    <td colSpan="10" className="px-3 py-5 text-center text-slate-400 italic">
                                                                         Không gắn kế hoạch ERP
                                                                     </td>
                                                                 </tr>

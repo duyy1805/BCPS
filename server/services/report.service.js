@@ -29,6 +29,69 @@ class ReportService {
         return defaultValue;
     }
 
+    toNullableNumber(value) {
+        if (value === undefined || value === null || value === "") return null;
+        const numberValue = Number(value);
+        return Number.isFinite(numberValue) ? numberValue : null;
+    }
+
+    toNullableDate(value) {
+        if (value === undefined || value === null || value === "") return null;
+        const text = String(value).trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return undefined;
+
+        const [year, month, day] = text.split("-").map(Number);
+        const date = new Date(`${text}T00:00:00`);
+        if (
+            Number.isNaN(date.getTime()) ||
+            date.getFullYear() !== year ||
+            date.getMonth() + 1 !== month ||
+            date.getDate() !== day
+        ) {
+            return undefined;
+        }
+
+        return text;
+    }
+
+    normalizePlanItems(body) {
+        const rawPlans = Array.isArray(body.plans)
+            ? body.plans
+            : (
+                Array.isArray(body.planSelectKeys)
+                    ? body.planSelectKeys.map((key) => ({ planSelectKey: key }))
+                    : (
+                        body.planSelectKey !== undefined &&
+                        body.planSelectKey !== null &&
+                        String(body.planSelectKey).trim() !== "" &&
+                        String(body.planSelectKey).trim() !== "0"
+                            ? [{ planSelectKey: body.planSelectKey }]
+                            : []
+                    )
+            );
+
+        const seen = new Set();
+        return rawPlans
+            .map((plan) => {
+                const planSelectKey = String(plan?.planSelectKey ?? plan?.PlanSelectKey ?? plan ?? "").trim();
+                if (!planSelectKey || planSelectKey === "0" || seen.has(planSelectKey)) return null;
+                seen.add(planSelectKey);
+
+                const adjustQty = this.toNullableNumber(plan?.adjustQty ?? plan?.AdjustQty);
+                if ((plan?.adjustQty ?? plan?.AdjustQty) !== undefined && (plan?.adjustQty ?? plan?.AdjustQty) !== "" && adjustQty === null) {
+                    throw new Error("Số lượng điều chỉnh không hợp lệ.");
+                }
+
+                const adjustDate = this.toNullableDate(plan?.adjustDate ?? plan?.AdjustDate);
+                if (adjustDate === undefined) {
+                    throw new Error("Ngày điều chỉnh không hợp lệ.");
+                }
+
+                return { planSelectKey, adjustQty, adjustDate };
+            })
+            .filter(Boolean);
+    }
+
     async notifySafely(actionName, handler) {
         try {
             await handler();
@@ -52,16 +115,8 @@ class ReportService {
     }
 
     async saveDraft(body, currentUser) {
-        const planSelectKeys = Array.isArray(body.planSelectKeys)
-            ? [...new Set(body.planSelectKeys.map((key) => String(key || "").trim()).filter((key) => key && key !== "0"))]
-            : (
-                body.planSelectKey !== undefined &&
-                body.planSelectKey !== null &&
-                String(body.planSelectKey).trim() !== "" &&
-                String(body.planSelectKey).trim() !== "0"
-                    ? [String(body.planSelectKey).trim()]
-                    : []
-            );
+        const planItems = this.normalizePlanItems(body);
+        const planSelectKeys = planItems.map((plan) => plan.planSelectKey);
         const hasPlanSelection = planSelectKeys.length > 0;
 
         const payload = {
@@ -108,7 +163,7 @@ class ReportService {
             : await this.repo.saveDraftWithoutPlan(payload);
 
         const reportId = result.output.ReportID || result.output.ReportId;
-        await this.repo.syncPlans(reportId, planSelectKeys, currentUser.employeeCode);
+        await this.repo.syncPlans(reportId, planItems, currentUser.employeeCode);
 
         return ok(
             {
@@ -138,12 +193,6 @@ class ReportService {
     async getAvailableActions(reportId, currentUser) {
         const result = await this.repo.getAvailableActions(reportId, currentUser.employeeCode);
         return ok(result.recordsets[0]?.[0] || null);
-    }
-
-    toNullableNumber(value) {
-        if (value === undefined || value === null || value === "") return null;
-        const numberValue = Number(value);
-        return Number.isFinite(numberValue) ? numberValue : null;
     }
 
     normalizeResponseCosts(costs) {

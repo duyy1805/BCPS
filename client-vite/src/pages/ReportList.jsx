@@ -233,6 +233,11 @@ export default function ReportList() {
                                                     <div key={plan.PlanSelectKey} className="rounded-xl bg-slate-50 px-3 py-2">
                                                         <div className="font-bold text-slate-800">{plan.OrderCode || plan.PlanNo || "N/A"}</div>
                                                         <div className="truncate text-xs text-slate-500">{plan.ProductName || plan.PlanNo || ""}</div>
+                                                        {(plan.AdjustQty !== null && plan.AdjustQty !== undefined || plan.AdjustDate) && (
+                                                            <div className="mt-1 text-[11px] font-bold text-blue-600">
+                                                                ĐC: {plan.AdjustQty ?? "--"} {plan.AdjustDate ? `- ${formatDate(plan.AdjustDate, false)}` : ""}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -333,6 +338,11 @@ export default function ReportList() {
                                                                 <div className="text-xs text-slate-500 truncate max-w-37.5 lg:max-w-50" title={plan.ProductName}>
                                                                     {plan.ProductName || plan.PlanNo || ""}
                                                                 </div>
+                                                                {(plan.AdjustQty !== null && plan.AdjustQty !== undefined || plan.AdjustDate) && (
+                                                                    <div className="text-[11px] font-bold text-blue-600">
+                                                                        ĐC: {plan.AdjustQty ?? "--"} {plan.AdjustDate ? `- ${formatDate(plan.AdjustDate, false)}` : ""}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         ))
                                                     ) : (
