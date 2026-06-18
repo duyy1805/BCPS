@@ -212,7 +212,7 @@ class ReportRepository extends DbRepository {
                 { name: "ExceptionTypeID", type: sql.Int, value: params.exceptionTypeId },
                 { name: "ExceptionCauseID", type: sql.Int, value: params.exceptionCauseId },
                 { name: "SeverityCode", type: sql.VarChar(30), value: params.severityCode },
-                { name: "ShortDescription", type: sql.NVarChar(500), value: params.shortDescription },
+                { name: "ShortDescription", type: sql.NVarChar(sql.MAX), value: params.shortDescription },
                 { name: "DetailedDescription", type: sql.NVarChar(sql.MAX), value: params.detailedDescription },
                 { name: "AffectedQty", type: sql.Decimal(18, 3), value: params.affectedQty },
                 { name: "AffectedUom", type: sql.NVarChar(50), value: params.affectedUom },
