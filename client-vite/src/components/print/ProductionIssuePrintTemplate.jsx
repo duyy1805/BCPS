@@ -154,6 +154,12 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
     const bgdApprover = approvals?.find(a => a.ApprovalRoleCode === 'BGD' && a.DecisionCode !== 'PENDING')
         || approvals?.find(a => a.ApprovalRoleCode === 'BGD');
 
+    const approvalOpinions = [
+        { label: "Phụ trách kho", approval: khoApprover },
+        { label: "Trưởng phòng Vật tư", approval: vtApprover },
+        { label: "Chủ tịch", approval: bgdApprover },
+    ].filter(({ approval }) => approval?.DecisionComment?.trim());
+
 
     // Total Cost
     const totalCostAmount = costLines?.reduce((sum, line) => sum + (Number(line.Amount) || 0), 0) || 0;
@@ -337,10 +343,44 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                     </tbody>
                 </table>
 
+                {approvalOpinions.length > 0 && (
+                    <>
+                        <div style={styles.sectionTitle}>III. Ý kiến phê duyệt</div>
+                        <table style={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th style={{ ...styles.th, width: "5%" }}>TT</th>
+                                    <th style={{ ...styles.th, width: "20%" }}>Chức danh</th>
+                                    <th style={{ ...styles.th, width: "25%" }}>Người phê duyệt</th>
+                                    <th style={{ ...styles.th, width: "35%" }}>Ý kiến</th>
+                                    <th style={{ ...styles.th, width: "15%" }}>Ngày phê duyệt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {approvalOpinions.map(({ label, approval }, idx) => (
+                                    <tr key={approval.ApprovalID || approval.ApprovalRoleCode}>
+                                        <td style={styles.tdCenter}>{idx + 1}</td>
+                                        <td style={styles.td}>{label}</td>
+                                        <td style={styles.td}>{approval.ApproverEmpName || ""}</td>
+                                        <td style={styles.td}>{approval.DecisionComment}</td>
+                                        <td style={styles.tdCenter}>
+                                            {approval.DecisionAt
+                                                ? new Date(approval.DecisionAt).toLocaleString("vi-VN")
+                                                : ""}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </>
+                )}
+
                 {/* --- SECTION III (Optional) --- */}
                 {hasActualCost && (
                     <>
-                        <div style={styles.sectionTitle}>III. Chi phí phát sinh</div>
+                        <div style={styles.sectionTitle}>
+                            {approvalOpinions.length > 0 ? "IV. Chi phí phát sinh" : "III. Chi phí phát sinh"}
+                        </div>
                         <table style={styles.table}>
                             <thead>
                                 <tr>
