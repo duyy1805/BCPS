@@ -278,13 +278,14 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                             <th style={styles.th} rowSpan={2}>Công đoạn</th>
                             <th style={styles.th} rowSpan={2}>Bộ phận</th>
                             <th style={styles.th} colSpan={2}>Kế hoạch</th>
-                            <th style={styles.th} colSpan={2}>Điều chỉnh</th>
+                            <th style={styles.th} colSpan={3}>Điều chỉnh</th>
                         </tr>
                         <tr>
                             <th style={styles.th}>Ngày KH</th>
                             <th style={styles.th}>Số lượng</th>
                             <th style={styles.th}>Ngày</th>
                             <th style={styles.th}>Số lượng</th>
+                            <th style={styles.th}>Bổ sung</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -301,10 +302,11 @@ export const ProductionIssuePrintTemplate = React.forwardRef(({ data }, ref) => 
                                 <td style={styles.tdCenter}>{plan.PlanQty ?? '...'}</td>
                                 <td style={styles.tdCenter}>{plan.AdjustDate ? new Date(plan.AdjustDate).toLocaleDateString('vi-VN') : '...'}</td>
                                 <td style={styles.tdCenter}>{plan.AdjustQty ?? '...'}</td>
+                                <td style={styles.tdCenter}>{plan.IsAdditionalPlan ? 'Có' : ''}</td>
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={11} style={{ ...styles.tdCenter, fontStyle: "italic", color: "#666" }}>
+                                <td colSpan={12} style={{ ...styles.tdCenter, fontStyle: "italic", color: "#666" }}>
                                     Không gắn kế hoạch ERP
                                 </td>
                             </tr>

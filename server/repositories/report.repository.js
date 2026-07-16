@@ -338,13 +338,15 @@ class ReportRepository extends DbRepository {
                     SELECT
                         LTRIM(RTRIM(PlanSelectKey)) AS PlanSelectKey,
                         AdjustQty,
-                        AdjustDate
+                        AdjustDate,
+                        ISNULL(IsAdditionalPlan, 0) AS IsAdditionalPlan
                     FROM OPENJSON(@PlanItemsJson)
                     WITH
                     (
                         PlanSelectKey VARCHAR(300) '$.planSelectKey',
                         AdjustQty DECIMAL(18, 3) '$.adjustQty',
-                        AdjustDate DATE '$.adjustDate'
+                        AdjustDate DATE '$.adjustDate',
+                        IsAdditionalPlan BIT '$.isAdditionalPlan'
                     )
                     WHERE NULLIF(LTRIM(RTRIM(PlanSelectKey)), '') IS NOT NULL
                 )
@@ -355,7 +357,8 @@ class ReportRepository extends DbRepository {
                         @ReportID AS ReportID,
                         PlanSelectKey,
                         MAX(AdjustQty) AS AdjustQty,
-                        MAX(AdjustDate) AS AdjustDate
+                        MAX(AdjustDate) AS AdjustDate,
+                        CAST(MAX(CAST(IsAdditionalPlan AS TINYINT)) AS BIT) AS IsAdditionalPlan
                     FROM requestedAdjustments
                     GROUP BY PlanSelectKey
                 ) AS source
@@ -365,10 +368,11 @@ class ReportRepository extends DbRepository {
                     UPDATE SET
                         AdjustQty = source.AdjustQty,
                         AdjustDate = source.AdjustDate,
+                        IsAdditionalPlan = source.IsAdditionalPlan,
                         UpdatedAt = SYSDATETIME()
                 WHEN NOT MATCHED BY TARGET THEN
-                    INSERT (ReportID, PlanSelectKey, AdjustQty, AdjustDate)
-                    VALUES (source.ReportID, source.PlanSelectKey, source.AdjustQty, source.AdjustDate);
+                    INSERT (ReportID, PlanSelectKey, AdjustQty, AdjustDate, IsAdditionalPlan)
+                    VALUES (source.ReportID, source.PlanSelectKey, source.AdjustQty, source.AdjustDate, source.IsAdditionalPlan);
 
                 DELETE adj
                 FROM ps.ReportPlanAdjustment adj
@@ -462,7 +466,8 @@ class ReportRepository extends DbRepository {
             SELECT
                 rp.*,
                 adj.AdjustQty,
-                adj.AdjustDate
+                adj.AdjustDate,
+                ISNULL(adj.IsAdditionalPlan, 0) AS IsAdditionalPlan
             FROM ps.ReportPlan rp
             LEFT JOIN ps.ReportPlanAdjustment adj
                 ON adj.ReportID = rp.ReportID
@@ -609,7 +614,8 @@ class ReportRepository extends DbRepository {
             SELECT
                 rp.*,
                 adj.AdjustQty,
-                adj.AdjustDate
+                adj.AdjustDate,
+                ISNULL(adj.IsAdditionalPlan, 0) AS IsAdditionalPlan
             FROM ps.ReportPlan rp
             LEFT JOIN ps.ReportPlanAdjustment adj
                 ON adj.ReportID = rp.ReportID

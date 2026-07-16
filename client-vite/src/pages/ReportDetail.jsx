@@ -438,6 +438,7 @@ export default function ReportDetail() {
             ...plan,
             adjustQty: plan.AdjustQty ?? '',
             adjustDate: plan.AdjustDate ? String(plan.AdjustDate).split("T")[0] : '',
+            isAdditionalPlan: Boolean(plan.IsAdditionalPlan),
         }));
         setEditForm({
             reportId: id ? Number(id) : null,
@@ -477,7 +478,7 @@ export default function ReportDetail() {
         if (editSelectedPlans.some((item) => item.PlanSelectKey === plan.PlanSelectKey)) {
             return showToast("Kế hoạch này đã được chọn", "warning");
         }
-        const nextPlans = [...editSelectedPlans, { ...plan, adjustQty: '', adjustDate: '' }];
+        const nextPlans = [...editSelectedPlans, { ...plan, adjustQty: '', adjustDate: '', isAdditionalPlan: false }];
         setEditSelectedPlans(nextPlans);
         setEditForm((prev) => ({ ...prev, planSelectKeys: nextPlans.map((item) => item.PlanSelectKey) }));
     };
@@ -527,6 +528,7 @@ export default function ReportDetail() {
                     planSelectKey: plan.PlanSelectKey,
                     adjustQty: plan.adjustQty === '' || plan.adjustQty === null || plan.adjustQty === undefined ? null : plan.adjustQty,
                     adjustDate: plan.adjustDate === '' || plan.adjustDate === null || plan.adjustDate === undefined ? null : plan.adjustDate,
+                    isAdditionalPlan: Boolean(plan.isAdditionalPlan),
                 })),
             };
             const res = await api.post("/reports/draft", payload);
@@ -1149,7 +1151,7 @@ export default function ReportDetail() {
                                                     />
                                                 )}
                                                 <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
-                                                    <table className="w-full min-w-[1120px] text-xs">
+                                                    <table className="w-full min-w-[1180px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
                                                                 <th rowSpan="2" className="px-3 py-2 text-left">Mã kế hoạch</th>
@@ -1159,7 +1161,7 @@ export default function ReportDetail() {
                                                                 <th rowSpan="2" className="px-3 py-2 text-left">Công đoạn</th>
                                                                 <th rowSpan="2" className="px-3 py-2 text-left">Bộ phận</th>
                                                                 <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-blue-700">Kế hoạch</th>
-                                                                <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
+                                                                <th colSpan="3" className="border-l border-slate-200 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
                                                                 <th rowSpan="2" className="px-3 py-2 text-right">Xóa</th>
                                                             </tr>
                                                             <tr>
@@ -1167,6 +1169,7 @@ export default function ReportDetail() {
                                                                 <th className="px-3 py-2 text-right">Số lượng</th>
                                                                 <th className="border-l border-slate-200 px-3 py-2 text-center">Ngày</th>
                                                                 <th className="px-3 py-2 text-right">Số lượng</th>
+                                                                <th className="px-3 py-2 text-center">Bổ sung</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-100">
@@ -1197,6 +1200,20 @@ export default function ReportDetail() {
                                                                             placeholder="0"
                                                                         />
                                                                     </td>
+                                                                    <td className="px-3 py-2 text-center">
+                                                                        <label
+                                                                            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1"
+                                                                            title="Tích nếu đây là kế hoạch bổ sung ngoài kế hoạch ban đầu"
+                                                                        >
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={Boolean(plan.isAdditionalPlan)}
+                                                                                onChange={(e) => updateEditPlanAdjustment(plan.PlanSelectKey, 'isAdditionalPlan', e.target.checked)}
+                                                                                className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                                                                aria-label="Kế hoạch bổ sung"
+                                                                            />
+                                                                        </label>
+                                                                    </td>
                                                                     <td className="px-3 py-2 text-right">
                                                                         <button type="button" onClick={() => removeEditPlan(plan.PlanSelectKey)} className="text-red-500 hover:text-red-700">
                                                                             <Trash2 className="w-4 h-4 inline" />
@@ -1205,7 +1222,7 @@ export default function ReportDetail() {
                                                                 </tr>
                                                             )) : (
                                                                 <tr>
-                                                                    <td colSpan="11" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                    <td colSpan="12" className="px-3 py-5 text-center text-slate-400 italic">
                                                                         Không gắn kế hoạch ERP
                                                                     </td>
                                                                 </tr>
@@ -1421,7 +1438,7 @@ export default function ReportDetail() {
                                                     Danh sách kế hoạch ERP
                                                 </h3>
                                                 <div className="overflow-x-auto rounded-xl border border-slate-200 mobile-table-wrap">
-                                                    <table className="w-full min-w-[1040px] text-xs">
+                                                    <table className="w-full min-w-[1100px] text-xs">
                                                         <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
                                                             <tr>
                                                                 <th rowSpan="2" className="px-3 py-2 text-left">Mã kế hoạch</th>
@@ -1431,13 +1448,14 @@ export default function ReportDetail() {
                                                                 <th rowSpan="2" className="px-3 py-2 text-left">Công đoạn</th>
                                                                 <th rowSpan="2" className="px-3 py-2 text-left">Bộ phận</th>
                                                                 <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-blue-700">Kế hoạch</th>
-                                                                <th colSpan="2" className="border-l border-slate-200 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
+                                                                <th colSpan="3" className="border-l border-slate-200 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
                                                             </tr>
                                                             <tr>
                                                                 <th className="border-l border-slate-200 px-3 py-2 text-center">Ngày KH</th>
                                                                 <th className="px-3 py-2 text-right">Số lượng</th>
                                                                 <th className="border-l border-slate-200 px-3 py-2 text-center">Ngày</th>
                                                                 <th className="px-3 py-2 text-right">Số lượng</th>
+                                                                <th className="px-3 py-2 text-center">Bổ sung</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-100">
@@ -1453,10 +1471,17 @@ export default function ReportDetail() {
                                                                     <td className="px-3 py-2 text-right">{plan.PlanQty ?? '--'}</td>
                                                                     <td className="px-3 py-2 text-center">{formatDate(plan.AdjustDate, false) || '--'}</td>
                                                                     <td className="px-3 py-2 text-right">{plan.AdjustQty ?? '--'}</td>
+                                                                    <td className="px-3 py-2 text-center">
+                                                                        {plan.IsAdditionalPlan ? (
+                                                                            <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black uppercase text-amber-700 ring-1 ring-amber-200">
+                                                                                Bổ sung
+                                                                            </span>
+                                                                        ) : '--'}
+                                                                    </td>
                                                                 </tr>
                                                             )) : (
                                                                 <tr>
-                                                                    <td colSpan="10" className="px-3 py-5 text-center text-slate-400 italic">
+                                                                    <td colSpan="11" className="px-3 py-5 text-center text-slate-400 italic">
                                                                         Không gắn kế hoạch ERP
                                                                     </td>
                                                                 </tr>

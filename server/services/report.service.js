@@ -87,7 +87,12 @@ class ReportService {
                     throw new Error("Ngày điều chỉnh không hợp lệ.");
                 }
 
-                return { planSelectKey, adjustQty, adjustDate };
+                const isAdditionalPlan = this.toBoolean(
+                    plan?.isAdditionalPlan ?? plan?.IsAdditionalPlan,
+                    false
+                );
+
+                return { planSelectKey, adjustQty, adjustDate, isAdditionalPlan };
             })
             .filter(Boolean);
     }

@@ -153,7 +153,7 @@ export default function ReportCreate() {
                 showToast('Kế hoạch này đã được chọn', 'warning');
                 return prev;
             }
-            return [...prev, { ...plan, adjustQty: '', adjustDate: '' }];
+            return [...prev, { ...plan, adjustQty: '', adjustDate: '', isAdditionalPlan: false }];
         });
     };
 
@@ -206,7 +206,8 @@ export default function ReportCreate() {
                 plans: selectedPlans.map(plan => ({
                     planSelectKey: plan.PlanSelectKey,
                     adjustQty: plan.adjustQty === '' || plan.adjustQty === null || plan.adjustQty === undefined ? null : plan.adjustQty,
-                    adjustDate: plan.adjustDate === '' || plan.adjustDate === null || plan.adjustDate === undefined ? null : plan.adjustDate
+                    adjustDate: plan.adjustDate === '' || plan.adjustDate === null || plan.adjustDate === undefined ? null : plan.adjustDate,
+                    isAdditionalPlan: Boolean(plan.isAdditionalPlan)
                 })),
                 occurrenceTime: new Date().toISOString(),
                 exceptionTypeId: Number(form.typeId),
@@ -323,7 +324,7 @@ export default function ReportCreate() {
 
                         {selectedPlans.length > 0 && (
                             <div className="mobile-table-wrap overflow-x-auto rounded-xl border border-blue-100 bg-blue-50/30 animate-in fade-in">
-                                <table className="w-full min-w-[1120px] text-sm">
+                                <table className="w-full min-w-[1180px] text-sm">
                                     <thead className="bg-blue-50 text-[10px] uppercase tracking-wider text-slate-500">
                                         <tr>
                                             <th rowSpan="2" className="px-3 py-2 text-left">Kế hoạch</th>
@@ -333,7 +334,7 @@ export default function ReportCreate() {
                                             <th rowSpan="2" className="px-3 py-2 text-left">Công đoạn</th>
                                             <th rowSpan="2" className="px-3 py-2 text-left">Bộ phận</th>
                                             <th colSpan="2" className="border-l border-blue-100 px-3 py-2 text-center text-blue-700">Kế hoạch</th>
-                                            <th colSpan="2" className="border-l border-blue-100 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
+                                            <th colSpan="3" className="border-l border-blue-100 px-3 py-2 text-center text-red-600">Điều chỉnh</th>
                                             <th rowSpan="2" className="px-3 py-2 text-right">Xóa</th>
                                         </tr>
                                         <tr>
@@ -341,6 +342,7 @@ export default function ReportCreate() {
                                             <th className="px-3 py-2 text-right">Số lượng</th>
                                             <th className="border-l border-blue-100 px-3 py-2 text-center">Ngày</th>
                                             <th className="px-3 py-2 text-right">Số lượng</th>
+                                            <th className="px-3 py-2 text-center">Bổ sung</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-blue-100">
@@ -370,6 +372,20 @@ export default function ReportCreate() {
                                                         className="w-28 rounded-lg border border-blue-100 bg-white px-2 py-1 text-right font-bold text-slate-800 outline-none focus:border-blue-500"
                                                         placeholder="0"
                                                     />
+                                                </td>
+                                                <td className="px-3 py-2 text-center">
+                                                    <label
+                                                        className="inline-flex items-center justify-center rounded-lg border border-blue-100 bg-white px-2 py-1"
+                                                        title="Tích nếu đây là kế hoạch bổ sung ngoài kế hoạch ban đầu"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={Boolean(plan.isAdditionalPlan)}
+                                                            onChange={e => updateSelectedPlanAdjustment(plan.PlanSelectKey, 'isAdditionalPlan', e.target.checked)}
+                                                            className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                                            aria-label="Kế hoạch bổ sung"
+                                                        />
+                                                    </label>
                                                 </td>
                                                 <td className="px-3 py-2 text-right">
                                                     <button type="button" onClick={() => removeSelectedPlan(plan.PlanSelectKey)} className="inline-flex items-center text-red-500 hover:text-red-700">
