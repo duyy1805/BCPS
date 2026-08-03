@@ -352,43 +352,6 @@ export default function Dashboard() {
                         </table>
                     </div>
                 </div>
-
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="px-6 py-4 border-b border-red-100 bg-red-50/80 font-bold text-red-800 shrink-0 flex justify-between items-center">
-                        <span>Cần xử lý khẩn cấp (Quá hạn)</span>
-                        <AlertTriangle className="w-5 h-5 text-red-500" />
-                    </div>
-                    <div className="p-0 overflow-auto max-h-80 custom-scrollbar mobile-table-wrap">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 shadow-sm">
-                                <tr>
-                                    <th className="p-3 md:p-4 font-bold text-slate-600">Mã BCPS</th>
-                                    <th className="p-3 md:p-4 font-bold text-slate-600">Người chịu TN</th>
-                                    <th className="p-3 md:p-4 text-right font-bold text-slate-600">Quá hạn</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {(!data.overdueItems || data.overdueItems.length === 0) ? (
-                                    <tr><td colSpan="3" className="p-6 text-center text-emerald-600 font-bold">Tuyệt vời! Không có báo cáo nào quá hạn.</td></tr>
-                                ) : (
-                                    data.overdueItems.map((item, i) => (
-                                        <tr
-                                            key={i}
-                                            onClick={() => navigate(`/reports/${item.ReportID}`)}
-                                            className="hover:bg-red-50/50 cursor-pointer transition-colors group"
-                                        >
-                                            <td className="p-3 md:p-4 font-bold text-blue-600 group-hover:text-blue-700 group-hover:underline">{item.ReportNo}</td>
-                                            <td className="p-3 md:p-4 font-medium text-slate-700">{item.MainResponsibleEmpName || 'N/A'}</td>
-                                            <td className="p-3 md:p-4 text-right">
-                                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold text-xs">{item.OverdueDays} ngày</span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
         </div>
     );
