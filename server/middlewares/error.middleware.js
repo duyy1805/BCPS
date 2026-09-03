@@ -3,6 +3,10 @@ const { fail } = require("../common/api-response");
 function errorMiddleware(err, req, res, next) {
     console.error("API ERROR:", err);
 
+    if (err && err.statusCode) {
+        return res.status(err.statusCode).json(fail(err.message || "Yêu cầu không hợp lệ."));
+    }
+
     if (err && err.number) {
         let statusCode = 400;
 

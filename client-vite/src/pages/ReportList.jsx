@@ -108,8 +108,8 @@ export default function ReportList() {
     };
 
     const isOverdue = (report) => {
-        const completedStatuses = ["APPROVED", "CLOSED", "REJECTED"];
-        return Number(report?.OverdueDays || 0) > 0 && !completedStatuses.includes(report?.StatusCode);
+        const overdueWorkflowStatuses = ["WAITING_FEEDBACK", "WAITING_APPROVAL"];
+        return Number(report?.OverdueDays || 0) > 0 && overdueWorkflowStatuses.includes(report?.StatusCode);
     };
 
     return (

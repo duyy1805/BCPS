@@ -8,5 +8,7 @@ router.use(authMiddleware);
 
 router.get("/management", controller.getManagementDashboard);
 router.get("/cost", controller.getCostDashboard);
+router.get("/overdue/export", controller.exportOverdueDashboard);
+router.get("/overdue", controller.getOverdueDashboard);
 
 module.exports = router;
