@@ -16,6 +16,7 @@ router.post("/:reportId/submit", controller.submit);
 router.post("/:reportId/responses", controller.saveResponse);
 router.post("/:reportId/cost-lines", controller.addCostLine);
 router.post("/:reportId/submit-approval", controller.submitApproval);
+router.post("/:reportId/return-for-supplement", controller.returnForSupplement);
 router.post("/:reportId/approval-decision", controller.approvalDecision);
 router.post("/:reportId/close", controller.closeReport);
 router.delete("/:reportId", controller.deleteDraft);

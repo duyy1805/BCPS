@@ -92,6 +92,19 @@ async function closeReport(req, res, next) {
     }
 }
 
+async function returnForSupplement(req, res, next) {
+    try {
+        const result = await service.returnForSupplement(
+            Number(req.params.reportId),
+            req.body,
+            req.currentUser
+        );
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+}
+
 async function deleteDraft(req, res, next) {
     try {
         const result = await service.deleteDraft(Number(req.params.reportId), req.currentUser);
@@ -129,6 +142,7 @@ module.exports = {
     saveResponse,
     addCostLine,
     submitApproval,
+    returnForSupplement,
     approvalDecision,
     closeReport,
     deleteDraft,

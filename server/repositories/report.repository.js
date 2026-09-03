@@ -551,6 +551,42 @@ class ReportRepository extends DbRepository {
         ]);
     }
 
+    async returnForSupplement(reportId, empCode, reason) {
+        return this.executeStoredProcedure("ps.usp_Report_ReturnDuringFeedback", [
+            { name: "ReportID", type: sql.BigInt, value: reportId },
+            { name: "ActionByEmpCode", type: sql.VarChar(50), value: empCode },
+            { name: "Reason", type: sql.NVarChar(sql.MAX), value: reason }
+        ]);
+    }
+
+    async canReturnForSupplement(reportId, empCode) {
+        return this.query(
+            `
+            SELECT CAST(CASE WHEN EXISTS
+            (
+                SELECT 1
+                FROM ps.Report r
+                INNER JOIN ps.UserRole ur ON ur.EmployeeCode = @EmpCode
+                INNER JOIN ps.RolePermission rp ON rp.RoleCode = ur.RoleCode
+                INNER JOIN ps.PermissionMaster pm ON pm.PermissionCode = rp.PermissionCode
+                WHERE r.ReportID = @ReportID
+                  AND r.StatusCode = 'WAITING_FEEDBACK'
+                  AND ISNULL(r.IsDeleted, 0) = 0
+                  AND ur.IsActive = 1
+                  AND (ur.EffectiveFrom IS NULL OR ur.EffectiveFrom <= CAST(GETDATE() AS DATE))
+                  AND (ur.EffectiveTo IS NULL OR ur.EffectiveTo >= CAST(GETDATE() AS DATE))
+                  AND rp.PermissionCode = 'REPORT_RETURN_DURING_FEEDBACK'
+                  AND rp.IsAllowed = 1
+                  AND pm.IsActive = 1
+            ) THEN 1 ELSE 0 END AS BIT) AS CanReturnForSupplement;
+            `,
+            [
+                { name: "ReportID", type: sql.BigInt, value: reportId },
+                { name: "EmpCode", type: sql.VarChar(50), value: empCode }
+            ]
+        );
+    }
+
     async close(reportId, params) {
         return this.executeStoredProcedure("ps.usp_Report_Close", [
             { name: "ReportID", type: sql.BigInt, value: reportId },

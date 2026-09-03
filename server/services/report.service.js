@@ -196,8 +196,16 @@ class ReportService {
     }
 
     async getAvailableActions(reportId, currentUser) {
-        const result = await this.repo.getAvailableActions(reportId, currentUser.employeeCode);
-        return ok(result.recordsets[0]?.[0] || null);
+        const [result, returnActionResult] = await Promise.all([
+            this.repo.getAvailableActions(reportId, currentUser.employeeCode),
+            this.repo.canReturnForSupplement(reportId, currentUser.employeeCode)
+        ]);
+        const actions = result.recordsets[0]?.[0] || {};
+        actions.CanReturnForSupplement = Boolean(
+            actions.CanReturnForSupplement ||
+            returnActionResult.recordset?.[0]?.CanReturnForSupplement
+        );
+        return ok(actions);
     }
 
     normalizeResponseCosts(costs) {
@@ -308,6 +316,29 @@ class ReportService {
         });
 
         return ok({ reportId, decisionCode: body.decisionCode }, "Đã cập nhật quyết định phê duyệt.");
+    }
+
+    async returnForSupplement(reportId, body, currentUser) {
+        const reason = String(body?.reason || "").trim();
+        if (!reason) {
+            throw new Error("Vui lòng nhập lý do trả lại phiếu.");
+        }
+
+        await this.repo.returnForSupplement(reportId, currentUser.employeeCode, reason);
+        await this.notifySafely("returnForSupplement", async () => {
+            const detail = await this.repo.getDetail(reportId);
+            await this.notificationService.createApprovalDecision(
+                detail,
+                "RETURNED",
+                reason,
+                currentUser.employeeCode
+            );
+        });
+
+        return ok(
+            { reportId, statusCode: "NEED_SUPPLEMENT" },
+            "Đã trả lại BCPS để bổ sung."
+        );
     }
 
     async close(reportId, body, currentUser) {

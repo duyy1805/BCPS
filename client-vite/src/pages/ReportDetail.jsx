@@ -196,6 +196,7 @@ export default function ReportDetail() {
                     const canDoSomething =
                         actionData.CanApprove ||
                         actionData.CanForwardBGD ||
+                        actionData.CanReturnForSupplement ||
                         actionData.CanClose;
                     const isInApprovalChain = reportData.approvals?.some(
                         (a) => a.ApproverEmpCode === user?.empCode,
@@ -321,6 +322,16 @@ export default function ReportDetail() {
                     decisionComment: note || (decision === "FORWARD_BGD" ? "Trình Ban giám đốc" : "Phê duyệt hồ sơ"),
                 }),
             `Thao tác ${actionName} thành công!`,
+        );
+    };
+
+    const returnDuringFeedback = async () => {
+        const reason = await prompt("Trả lại BCPS", "Nhập lý do cần bổ sung...", true);
+        if (!reason?.trim()) return;
+
+        handleAction(
+            () => api.post(`/reports/${id}/return-for-supplement`, { reason: reason.trim() }),
+            "Đã trả lại BCPS để bổ sung!",
         );
     };
 
@@ -692,6 +703,15 @@ export default function ReportDetail() {
                     )}
 
                     {/* Ghi Phản Hồi: DEPT_HANDLER khi phiếu WAITING_FEEDBACK & BP mình chưa phản hồi */}
+                    {actions?.CanReturnForSupplement && (
+                        <button
+                            onClick={returnDuringFeedback}
+                            className="inline-flex min-w-0 items-center justify-center px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 sm:px-4 bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        >
+                            Trả Lại
+                        </button>
+                    )}
+
                     {actions?.CanRespond && (
                         <button
                             onClick={openResponseModal}
