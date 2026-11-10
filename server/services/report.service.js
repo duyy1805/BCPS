@@ -336,7 +336,7 @@ class ReportService {
         });
 
         return ok(
-            { reportId, statusCode: "NEED_SUPPLEMENT" },
+            { reportId, statusCode: "DRAFT" },
             "Đã trả lại BCPS để bổ sung."
         );
     }
