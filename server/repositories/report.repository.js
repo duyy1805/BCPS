@@ -240,6 +240,121 @@ class ReportRepository extends DbRepository {
         };
     }
 
+    async updateDraftWithoutPlan(params) {
+        const result = await this.query(
+            `
+            SET NOCOUNT ON;
+            SET XACT_ABORT ON;
+
+            BEGIN TRY
+                BEGIN TRAN;
+
+                DECLARE
+                    @ResponsibleDeptName NVARCHAR(255),
+                    @MainResponsibleEmpName NVARCHAR(255),
+                    @ReportNo VARCHAR(30);
+
+                SELECT TOP (1)
+                    @ResponsibleDeptName = DepartmentName
+                FROM ps.vw_Department
+                WHERE DepartmentCode = @ResponsibleDeptCode
+                  AND IsActive = 1;
+
+                IF @ResponsibleDeptName IS NULL
+                    THROW 54001, N'Bộ phận chịu trách nhiệm không hợp lệ.', 1;
+
+                SELECT TOP (1)
+                    @MainResponsibleEmpName = EmployeeName
+                FROM erpint.vw_Employee
+                WHERE EmployeeCode = @MainResponsibleEmpCode
+                  AND IsActive = 1;
+
+                IF @MainResponsibleEmpName IS NULL
+                    THROW 54002, N'Cá nhân chịu trách nhiệm chính không hợp lệ.', 1;
+
+                SELECT @ReportNo = ReportNo
+                FROM ps.Report WITH (UPDLOCK, HOLDLOCK)
+                WHERE ReportID = @ReportID;
+
+                IF @ReportNo IS NULL
+                    THROW 54004, N'Không tìm thấy báo cáo cần cập nhật.', 1;
+
+                UPDATE ps.Report
+                SET
+                    OccurrenceTime = @OccurrenceTime,
+                    ExceptionTypeID = @ExceptionTypeID,
+                    ExceptionCauseID = @ExceptionCauseID,
+                    SeverityCode = @SeverityCode,
+                    ShortDescription = @ShortDescription,
+                    DetailedDescription = @DetailedDescription,
+                    AffectedQty = @AffectedQty,
+                    AffectedUom = @AffectedUom,
+                    ResponsibleDeptCode = @ResponsibleDeptCode,
+                    ResponsibleDeptName = @ResponsibleDeptName,
+                    MainResponsibleEmpCode = @MainResponsibleEmpCode,
+                    MainResponsibleEmpName = @MainResponsibleEmpName,
+                    ProposedSolution = @ProposedSolution,
+                    InterimAction = @InterimAction,
+                    ExpectedResult = @ExpectedResult,
+                    DueDate = @DueDate,
+                    HasCost = @HasCost,
+                    AffectsERP = 0,
+                    OccurredDeptCode_NT = @OccurredDeptCode_NT,
+                    OccurredDeptName_NT = @OccurredDeptCode_NT,
+                    UpdatedAt = SYSDATETIME()
+                WHERE ReportID = @ReportID;
+
+                EXEC ps.usp_Report_SetImpacts
+                    @ReportID = @ReportID,
+                    @ImpactCodesCsv = @ImpactCodesCsv;
+
+                EXEC ps.usp_Report_SetCoordDepartments
+                    @ReportID = @ReportID,
+                    @DepartmentCodesCsv = @CoordDepartmentCodesCsv;
+
+                COMMIT;
+
+                SELECT @ReportID AS ReportID, @ReportNo AS ReportNo;
+            END TRY
+            BEGIN CATCH
+                IF @@TRANCOUNT > 0
+                    ROLLBACK;
+                THROW;
+            END CATCH
+            `,
+            [
+                { name: "ReportID", type: sql.BigInt, value: params.reportId },
+                { name: "OccurrenceTime", type: sql.DateTime2(0), value: params.occurrenceTime },
+                { name: "ExceptionTypeID", type: sql.Int, value: params.exceptionTypeId },
+                { name: "ExceptionCauseID", type: sql.Int, value: params.exceptionCauseId },
+                { name: "SeverityCode", type: sql.VarChar(30), value: params.severityCode },
+                { name: "ShortDescription", type: sql.NVarChar(sql.MAX), value: params.shortDescription },
+                { name: "DetailedDescription", type: sql.NVarChar(sql.MAX), value: params.detailedDescription },
+                { name: "AffectedQty", type: sql.Decimal(18, 3), value: params.affectedQty },
+                { name: "AffectedUom", type: sql.NVarChar(50), value: params.affectedUom },
+                { name: "ResponsibleDeptCode", type: sql.NVarChar(255), value: params.responsibleDeptCode },
+                { name: "MainResponsibleEmpCode", type: sql.VarChar(50), value: params.mainResponsibleEmpCode },
+                { name: "ProposedSolution", type: sql.NVarChar(sql.MAX), value: params.proposedSolution },
+                { name: "InterimAction", type: sql.NVarChar(sql.MAX), value: params.interimAction },
+                { name: "ExpectedResult", type: sql.NVarChar(sql.MAX), value: params.expectedResult },
+                { name: "DueDate", type: sql.DateTime2(0), value: params.dueDate },
+                { name: "HasCost", type: sql.Bit, value: params.hasCost },
+                { name: "ImpactCodesCsv", type: sql.NVarChar(500), value: params.impactCodesCsv || "" },
+                { name: "CoordDepartmentCodesCsv", type: sql.NVarChar(sql.MAX), value: params.coordDepartmentCodesCsv || "" },
+                { name: "OccurredDeptCode_NT", type: sql.NVarChar(255), value: params.occurredDeptCode_NT || null }
+            ]
+        );
+
+        const row = result.recordset?.[0] || {};
+        return {
+            recordsets: result.recordsets || [],
+            output: {
+                ReportID: row.ReportID,
+                ReportNo: row.ReportNo
+            }
+        };
+    }
+
     async syncPlans(reportId, planItems, actionByEmpCode) {
         const items = Array.isArray(planItems) ? planItems : [];
         return this.query(

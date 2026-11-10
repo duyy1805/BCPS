@@ -163,9 +163,14 @@ class ReportService {
         const merged = [...new Set([...MANDATORY_DEPTS, ...userSelected])];
         payload.coordDepartmentCodesCsv = merged.length ? merged.join(",") : null;
 
-        const result = payload.planSelectKey || payload.reportId
-            ? await this.repo.saveDraft(payload)
-            : await this.repo.saveDraftWithoutPlan(payload);
+        let result;
+        if (hasPlanSelection) {
+            result = await this.repo.saveDraft(payload);
+        } else if (payload.reportId) {
+            result = await this.repo.updateDraftWithoutPlan(payload);
+        } else {
+            result = await this.repo.saveDraftWithoutPlan(payload);
+        }
 
         const reportId = result.output.ReportID || result.output.ReportId;
         await this.repo.syncPlans(reportId, planItems, currentUser.employeeCode);
